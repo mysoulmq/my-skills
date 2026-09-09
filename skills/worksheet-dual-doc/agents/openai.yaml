@@ -1,0 +1,4 @@
+interface:
+  display_name: "作业双版 DOC 整理"
+  short_description: "按固定规则生成题目版和答案版DOC，自动套用默认信息并验收格式"
+  default_prompt: "将输入作业整理成题目版与答案版DOC，使用默认编制信息并检查最终文件。"

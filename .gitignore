@@ -1,0 +1,19 @@
+# Only publish the explicitly maintained collection.
+/*
+!/.gitignore
+!/README.md
+!/skills/
+!/tests/
+/skills/*
+!/skills/worksheet-dual-doc/
+/tests/*
+!/tests/worksheet/
+__pycache__/
+*.py[cod]
+.DS_Store
+.env
+.env.*
+.venv/
+*.ttf
+*.ttc
+*.otf
