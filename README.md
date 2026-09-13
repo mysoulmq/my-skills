@@ -13,7 +13,7 @@
 
 ## 使用作业转换 Skill
 
-阅读 [入口说明](skills/worksheet-dual-doc/SKILL.md) 和 [运行环境](skills/worksheet-dual-doc/references/runtime.md)。将整个 `skills/worksheet-dual-doc` 文件夹安装到所用代理的个人 skills 目录；保留其内部结构。
+阅读 [入口说明](skills/worksheet-dual-doc/SKILL.md) 和 [运行环境](skills/worksheet-dual-doc/references/runtime.md)。当前项目通过 `.agents/skills/worksheet-dual-doc` 软链接指向 `../../skills/worksheet-dual-doc`，仅在本工作区加载，不安装到个人全局 skills 目录。
 
 示例请求：“把这份高效作业整理成题目版和答案版，编制人用王老师。”
 
@@ -31,4 +31,4 @@ python3 -m unittest discover -s tests/worksheet -p 'test_*.py' -v
 
 ## 维护约定
 
-本地开发和发布源码统一维护在 `skills/`。安装目录是运行副本；更新时从这里同步。旧项目的 `.agents/`、原始文档、临时文件和输出结果仅留在本地，不纳入 Git。新增 skill 时创建 `skills/<skill-name>/SKILL.md`，补充对应测试并更新上方目录表。
+本地开发和发布源码统一维护在 `skills/`。工作区 skill 入口是指向源码的相对软链接，无需复制同步；本地修改或 `git pull` 更新源码后，入口读取同一份文件。已加载旧指令的会话应重新读取 skill，必要时重新打开会话。Git 记录该软链接，其他本地 `.agents/` 内容、原始文档、临时文件和输出结果不纳入 Git。新增 skill 时创建 `skills/<skill-name>/SKILL.md`，补充对应测试并更新上方目录表。
