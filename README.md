@@ -4,6 +4,7 @@
 
 | Skill | 用途 |
 | --- | --- |
+| [lesson-image-ppt](skills/lesson-image-ppt/SKILL.md) | 将精编教案图片转成逐字保真的可编辑授课 PPT，支持参考式四层脑图、学科标注判断、分步出现与完整讲解页。 |
 | [worksheet-dual-doc](skills/worksheet-dual-doc/SKILL.md) | 将政治作业 DOCX 整理为题目、答案两个 DOC，检查格式、删除浙江选考题并生成复核 PDF。 |
 
 ## 目录
@@ -32,3 +33,9 @@ python3 -m unittest discover -s tests/worksheet -p 'test_*.py' -v
 ## 维护约定
 
 本地开发和发布源码统一维护在 `skills/`。安装目录是运行副本；更新时从这里同步。旧项目的 `.agents/`、原始文档、临时文件和输出结果仅留在本地，不纳入 Git。新增 skill 时创建 `skills/<skill-name>/SKILL.md`，补充对应测试并更新上方目录表。
+
+## 教案图片转授课 PPT
+
+阅读 [lesson-image-ppt](skills/lesson-image-ppt/SKILL.md)。输入精编教案图片，输出一课一份可编辑 PPT；完整讲解页逐字保留，教学导航图用可追溯原文摘录展开到知识点及记忆线索。先按定义、角度、逻辑限定、机制和要求等教学功能选词，保存标注理由，再编译为贴近参考的红字、黄底及青蓝重点。渲染器使用捆绑 Node 的 `@oai/artifact-tool`，环境与数据格式见 skill 的运行参考；不包含私人图片、课堂材料或商业字体。
+
+内容检查回归：`python3 -m unittest discover -s tests/lesson-image-ppt -p 'test_*.py' -v`。图片识别准确性和课堂图示质量仍需独立视觉复核。
