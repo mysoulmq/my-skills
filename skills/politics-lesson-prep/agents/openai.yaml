@@ -1,0 +1,4 @@
+interface:
+  display_name: "政治整课备课"
+  short_description: "复用教案图片课件能力，整合大题讲解并生成完整授课PPT和可执行授课方案"
+  default_prompt: "使用 $politics-lesson-prep 将提供的教案图片和大题文档制作成完整授课PPT与授课方案。"

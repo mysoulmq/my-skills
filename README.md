@@ -5,6 +5,7 @@
 | Skill | 用途 |
 | --- | --- |
 | [lesson-image-ppt](skills/lesson-image-ppt/SKILL.md) | 将精编教案图片转成逐字保真的可编辑授课 PPT，支持参考式四层脑图、学科标注判断、分步出现与完整讲解页。 |
+| [politics-lesson-prep](skills/politics-lesson-prep/SKILL.md) | 将政治教案图片与大题文档组织成授课方案、完整课件及讲义/讲题视图，支持诊断回题、课时速览、讲授提示与原生动画。 |
 | [worksheet-dual-doc](skills/worksheet-dual-doc/SKILL.md) | 将政治作业 DOCX 整理为题目、答案两个 DOC，检查格式、删除浙江选考题并生成复核 PDF。 |
 
 ## 目录
@@ -39,3 +40,11 @@ python3 -m unittest discover -s tests/worksheet -p 'test_*.py' -v
 阅读 [lesson-image-ppt](skills/lesson-image-ppt/SKILL.md)。输入精编教案图片，输出一课一份可编辑 PPT；完整讲解页逐字保留，教学导航图用可追溯原文摘录展开到知识点及记忆线索。先按定义、角度、逻辑限定、机制和要求等教学功能选词，保存标注理由，再编译为贴近参考的红字、黄底及青蓝重点。渲染器使用捆绑 Node 的 `@oai/artifact-tool`，环境与数据格式见 skill 的运行参考；不包含私人图片、课堂材料或商业字体。
 
 内容检查回归：`python3 -m unittest discover -s tests/lesson-image-ppt -p 'test_*.py' -v`。图片识别准确性和课堂图示质量仍需独立视觉复核。
+
+## 政治整课备课
+
+阅读 [politics-lesson-prep](skills/politics-lesson-prep/SKILL.md) 和 [执行说明](skills/politics-lesson-prep/references/running.md)。将此 skill 软链或安装到实际 workspace 的 `.agents/skills/politics-lesson-prep`，同级须能发现 `lesson-image-ppt`。依赖必须具备 `check_plan.py` 等新接口；同名旧版本可能不足，先运行依赖检查，不能假定仓库旧版已满足。
+
+示例：“根据这些教案图片和大题文档，准备高三政治复习课，交付完整PPT和可执行授课方案。”默认每课时40分钟，Word先给速览与可点击目录，详细讲法按需查阅；PPT备注仅留逐页临场短提示，原始资料另存备查底稿。使用明确支持模型配置的执行器落实图片 Astra/low、教研 Sol/medium 的分工，脚本本身不调用或切换模型。
+
+运行环境沿用 Codex 捆绑的 artifact-tool、Python 与 python-docx，字体由本机提供。文件检查不能替代教研及WPS播放检查；不保证任意新材料无需复核，也不支持WPS脑图节点自动重排。脱敏回归：`python3 -m unittest discover -s tests/politics-lesson-prep -v`。
