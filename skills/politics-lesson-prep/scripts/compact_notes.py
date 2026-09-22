@@ -14,11 +14,11 @@ def cue_text(plan, page_id):
         lines=list(lines)
         score_note=plan.get('scoreNotesByPage',{}).get(page_id)
         if score_note and score_note not in lines:lines.append(score_note)
-    if not isinstance(lines,list) or not 1<=len(lines)<=3:
-        raise ValueError(f'{page_id}: supply 1–3 page-specific notesByPage cues')
-    if any(not isinstance(s,str) or not s.strip() or len(s)>35 or '\n' in s for s in lines):
-        raise ValueError(f'{page_id}: each cue must be one line, at most 35 characters; rewrite, never truncate')
-    if sum(map(len,lines))>90:raise ValueError(f'{page_id}: notes exceed 90 characters')
+    if not isinstance(lines,list) or not 1<=len(lines)<=6:
+        raise ValueError(f'{page_id}: supply 1–6 page-specific notesByPage cues')
+    if any(not isinstance(s,str) or not s.strip() or len(s)>60 or '\n' in s for s in lines):
+        raise ValueError(f'{page_id}: each cue must be one line, at most 60 characters; rewrite, never truncate')
+    if sum(map(len,lines))>240:raise ValueError(f'{page_id}: notes exceed 240 characters')
     return '\n'.join(lines)
 
 def rewrite(input_path, mapping, plan, output_path):

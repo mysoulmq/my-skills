@@ -12,7 +12,7 @@ def validate(q):
         errors.append(f'{qid}: source prompt already has a score; preserve it as provided')
     for field in ('basis','referencePattern','note'):
         if not isinstance(p.get(field),str) or not p[field].strip():errors.append(f'{qid}: missing scorePrediction.{field}')
-    if len(p.get('note',''))>35 or '\n' in p.get('note',''):errors.append(f'{qid}: prediction note must be a single line <=35 characters')
+    if len(p.get('note',''))>60 or '\n' in p.get('note',''):errors.append(f'{qid}: prediction note must be a single line <=60 characters')
     if '预测' not in p.get('note',''):errors.append(f'{qid}: prediction note must identify prediction')
     if p.get('confidence') not in ('high','medium','low'):errors.append(f'{qid}: invalid prediction confidence')
     units=p.get('units',[]);seen=set();total=0
@@ -35,11 +35,11 @@ def validate(q):
     return errors
 
 def attach_notes(plan,questions,mapping):
-    """One short prediction note on the first actual page of each question."""
+    """Keep the prediction basis accessible on every page of its question."""
     notes=plan.setdefault('scoreNotesByPage',{})
     for q in questions['questions']:
         if q.get('scoreStatus')!='predicted':continue
         errors=validate(q)
         if errors:raise ValueError(errors)
-        page=next((p for p in mapping if p.get('questionId')==q['id']),None)
-        if page:notes[page['id']]=q['scorePrediction']['note']
+        for page in mapping:
+            if page.get('questionId')==q['id']:notes[page['id']]=q['scorePrediction']['note']

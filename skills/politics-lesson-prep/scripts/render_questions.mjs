@@ -33,7 +33,7 @@ function add(q,kind,part,material,size){
  slides.push({id,questionId:q.id,kind,stage:kind==='diagnosis'?'diagnosis':'teaching',sourceSlide:s._lessonNumber,clicks:[]});
  const cues=plan.notesByPage?.[id];
  if(!layoutOnly){
-  if(!Array.isArray(cues)||!cues.length||cues.length>3||cues.some(v=>typeof v!=='string'||!v.trim()||[...v].length>35||v.includes('\n'))||cues.reduce((n,v)=>n+[...v].length,0)>90)throw Error(`${id}: supply short notesByPage cues; use --layout-only to plan page IDs first`);
+  if(!Array.isArray(cues)||!cues.length||cues.length>5||cues.some(v=>typeof v!=='string'||!v.trim()||[...v].length>60||v.includes('\n'))||cues.reduce((n,v)=>n+[...v].length,0)>200)throw Error(`${id}: supply short notesByPage cues; use --layout-only to plan page IDs first`);
   s.speakerNotes.textFrame.setText(cues.join('\n'));
  }
  shape(s,'rect',12,16,578,688,{name:`${id}-material-border`,color:C.border,width:2});

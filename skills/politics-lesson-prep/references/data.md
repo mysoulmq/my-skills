@@ -14,7 +14,7 @@
 
 页面映射由构建脚本生成，不由模型猜页码：每条含稳定`id`、`kind`、`questionId`或知识引用、源PPT页号，以及各输出文件中的实际页号。教学计划中的活动必须映射到页面，缺少映射应报错，不生成看似完整的DOCX。
 
-`notesByPage`：教学计划中的对象，键为稳定页面ID（如`knowledge-1`或`q1-analysis-1`），值为1—3条短句数组。每条≤35字、合计≤90字；通常2—3条，按本页而非整个活动提炼，保留关键限定，不用程序截断。材料续页、分析页、答案页各有自己的提示。原题、参考答案和长讲解不进入备注。活动`cue`供Word速览使用，不整组复制到PPT。页面规划后一次补齐此字段；缺页时停止导出，不回退到长讲稿。
+`notesByPage`：教学计划中的对象，键为稳定页面ID（如`knowledge-1`或`q1-analysis-1`），值为1—5条短句数组。每条≤60字、教学提示合计≤200字；教学页通常3—5条，写具体提问、预期回答、关键解释及按需纠错/点击衔接，按本页而非整个活动提炼，保留关键限定，不用程序截断。材料续页、分析页、答案页各有自己的提示。原题、参考答案和长讲解不进入备注。活动`cue`供Word速览使用，不整组复制到PPT。页面规划后一次补齐此字段；缺页时停止导出，不回退到长讲稿。
 
 教学计划 `spec` 当前默认 `senior-review`，按复习课组织、计时与复核。完整sequence首项必须为整课大纲脑图 `knowledgePage:1`，后续页按知识依赖组织，不固定第二页为题目；只有符合复习课spec中诊断条件时才加入diagnosis阶段；变更次序时同步活动顺序和关联字段。
 
@@ -22,4 +22,4 @@
 
 原生脑图标注：题目taskFocus（仅用于分析区的任务解释），分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。materialFocus 为兼容旧底稿可保留但渲染器忽略，不再生成；原题材料与顶部设问不自动高亮。其余 Focus 是分析区或答案脑图当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，不能只写序号，不增加答案点。完整原理与应用仍用原字段保留。
 
-缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图首次题目页回填，合入短备注，不能挤成四行；预留该页一行给预测依据。
+缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图该题各页回填，另起一行说明总分、评分单位和对应理由；教学提示加预测依据最多6条、240字。
