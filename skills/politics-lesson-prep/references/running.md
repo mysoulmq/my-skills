@@ -6,7 +6,7 @@
 
 1. `python extract_docx.py input.docx extracted.json` 生成原序段落和表格，由指定模型一次解释题目结构。重要文字识别问题回原文件核对。
 2. 建立 questions.json 和 teaching-plan.json 后，运行 `python check_teaching.py questions.json teaching-plan.json --report check.json`。脚本核对连续材料引用、字段、活动题号及40分钟合计，不判断学科或教学含义。
-3. 使用 `node render_questions.mjs questions.json /absolute/lesson-image-ppt build sequence.json teaching-plan.json` 创建题目页、诊断页、本页讲授卡和稳定页面列表，随后调用依赖的 add_reveals.py 写入原生动画。第一次创建文件前，按 Presentations 技能执行其 operation marker。读取其终检要求，不以生成成功代替验收。
+3. 使用 `node render_questions.mjs questions.json /absolute/lesson-image-ppt build sequence.json teaching-plan.json` 创建题目页、经教学设计明确需要的可选诊断页、本页讲授卡和稳定页面列表，随后调用依赖的 add_reveals.py 写入原生动画。第一次创建文件前，按 Presentations 技能执行其 operation marker。读取其终检要求，不以生成成功代替验收。
 4. `pptx_views.py manifest.json candidate.pptx --mapping mapping.json` 根据教学序列复制原生页面及其资源关系，保持页面XML和动画。manifest 包含 `decks:{key:absolutePptxPath}` 与 `slides:[{id,deck,sourceSlide,activityIds,clicks}]`。sourceSlide 按实际播放顺序、从1开始，不能根据slide文件名推断。不得重复引用同一源页；需要重复显示时先明确生成独立页实例。复用已有讲義产物只用于日常缓存或接口验证，独立完整试跑必须从原图开始。
 5. `write_plan.py teaching-plan.json mapping.json candidate.docx` 按真实页码生成方案；每个活动须有页面映射，拒绝缺失引用。采用 Documents 技能捆绑 Python、python-docx，渲染并检查全部页面后再交付。
 
@@ -27,3 +27,5 @@
 题目覆盖检查 `check_question_slides.py` 的 mapping 参数必须是当前课件的页面数组，不是 assemble 输出的三视图对象。先从 page-mapping.json 选取相应视图（如“完整授课”）写入私有 view-mapping.json，再运行检查。错误的映射结构属于程序调用问题，不当作教学模型失败。
 
 独立教学复核至少留一份简短记录：实际模型与强度、结论、失败活动/页面ID及字段、原断言与依据。复核范围包括 questions、teaching-plan 的详细讲法/速览、notesByPage；不能只读最终示范答案。发现教学失败时保留简短记录，原模型自主局部修订并独立复核，通过后继续；无需逐错审批。仅在SKILL.md规定的真实阻塞条件下询问。结构检查通过不代表教学复核通过，最终报告区分首轮问题、已修正问题和未解决项。
+
+不要为保持旧页数而保留无教学依据的diagnosis阶段。取消前置诊断时同步移除sequence条目、独立诊断页与相应活动/备注，保留该题正式材料和解析；重新分配课时、生成三视图及方案映射。原题不因取消重复诊断页而丢失。
