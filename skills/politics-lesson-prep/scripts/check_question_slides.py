@@ -29,8 +29,8 @@ def check(pptx,questions,mapping):
                     props=shape.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
                     if props is not None and props.get('name','').startswith(q['id']+'-material-') and not props.get('name','').endswith('-title'):
                         material_parts.append(norm(''.join(t.text or '' for t in shape.iter(A+'t'))))
-        if q.get('scoreStatus')=='predicted' and any('预测' not in t for texts in grouped.values() for t in texts):
-            errors.append(f'{q["id"]}: predicted total lacks visible prediction label')
+        if q.get('scoreStatus')=='predicted' and re.search(r'[（(][^（）()]*\d+\s*分[，,]\s*预测[）)]',''.join(t for texts in grouped.values() for t in texts)):
+            errors.append(f'{q["id"]}: prediction label belongs in notes, not visible score')
         all_text=''.join(t for texts in grouped.values() for t in texts)
         for field in ('material','prompt'):
             pool=''.join(material_parts) if field=='material' and material_parts else all_text
