@@ -23,3 +23,7 @@
 成本记录不要求新模型调用或日志分析。可直接保存工具返回值；试跑报告只写pass/fail与具体问题。
 
 仅修改备注时，可用 `compact_notes.py input.pptx view-mapping.json teaching-plan.json output.pptx`，不重新生成正文、动画或调用教学模型。脚本只改原生备注正文；验证其余ZIP成员字节不变。修改前的完整原始资料留在私有底稿，可整理为带页面ID的附属编辑参考文件。
+
+题目覆盖检查 `check_question_slides.py` 的 mapping 参数必须是当前课件的页面数组，不是 assemble 输出的三视图对象。先从 page-mapping.json 选取相应视图（如“完整授课”）写入私有 view-mapping.json，再运行检查。错误的映射结构属于程序调用问题，不当作教学模型失败。
+
+独立教学复核至少留一份简短记录：实际模型与强度、结论、失败活动/页面ID及字段、原断言与依据。复核范围包括 questions、teaching-plan 的详细讲法/速览、notesByPage；不能只读最终示范答案。发生实质教学失败时保留该版本及记录并暂停，收到用户继续授权后才进行局部修订和独立复核；结构校验通过不能解除教学暂停。
