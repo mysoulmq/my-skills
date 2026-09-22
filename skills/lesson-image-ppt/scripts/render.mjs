@@ -1,3 +1,4 @@
+import {fitSpacing} from './spacing_profile.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -36,6 +37,13 @@ function resolve(o){
 function put(s,input,x,y,w,h,opts={}){const o=resolve(input);if(o.ref)usage.push({id:o.ref,slide:s._lessonNumber});return text(s,o.text,x,y,w,h,{...opts,...o,sourceId:o.ref||''});}
 function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??1.30)+6);}
 function height(o,w,size=32){return measure(resolve(o),w,size);}
+function blockHeight(b){
+ if(b.type==='paragraphs')return b.items.reduce((sum,input)=>{const o=resolve(input),size=o.size||b.size||32,inset=o.bullet?64:(o.indent||0);return sum+height(o,(b.w??1168)-inset,size)+(o.gap??b.gap??24);},0);
+ if(b.type==='branches'){const bw=1224-((b.rootWidth||230)+132);return b.items.reduce((sum,o)=>sum+height(o,bw,resolve(o).size||b.size||32),0)+(b.gap??32)*(b.items.length-1)+26;}
+ if(b.type==='table'){const widths=b.widths||b.rows[0].map(()=>1168/b.rows[0].length);return b.rows.reduce((sum,row,i)=>sum+Math.max(...row.map((o,c)=>height({...resolve(o),bold:i===0,lineSpacing:1.20},widths[c]-20,b.size||27)))+14,0)+26;}
+ if(b.type==='arrow')return 60;
+ throw Error(`Unknown block ${b.type}`);
+}
 function paraBlock(s,items,y,{x=56,w=1168,size=32,gap=24}={}){
  for(const input of items){const o=resolve(input);const sz=o.size||size;if(sz<26)throw Error('Body font below 26px; review source grouping and layout');const inset=o.bullet?64:(o.indent||0);const h=height(o,w-inset,sz);if(y+h>650)throw Error(`Slide ${s._lessonNumber}: body overflow; split slide (${o.ref||o.text})`);
  if(o.bullet)text(s,'•',x+28,y,28,sz*1.5,{size:sz,color:C.accent,sourceId:o.ref?`${o.ref}--bullet`:''});
@@ -197,7 +205,9 @@ for(let i=0;i<deck.slides.length;i++){
  line(s,56,213,1168,0,C.line,1.2);
  let y=d.bodyTop??238;
  if(!Number.isFinite(y)||y<218||y>500)throw Error('bodyTop must be within 218–500px');
- for(const b of d.blocks){if((b.before??0)<0||(b.after??0)<0)throw Error('Block spacing must be nonnegative');y+=b.before??0;if(b.type==='paragraphs')y=paraBlock(s,b.items,y,b);else if(b.type==='branches')y=branches(s,b,y);else if(b.type==='table')y=table(s,b,y);else if(b.type==='arrow'){
+ const fitted=fitSpacing(d.blocks,650-y,blockHeight,d.spacingProfile??deck.spacingProfile??'comfortable');
+ layoutReview.push({slide:s._lessonNumber,type:'content-spacing',...fitted.review});
+ for(const b of fitted.blocks){if((b.before??0)<0||(b.after??0)<0)throw Error('Block spacing must be nonnegative');y+=b.before??0;if(b.type==='paragraphs')y=paraBlock(s,b.items,y,b);else if(b.type==='branches')y=branches(s,b,y);else if(b.type==='table')y=table(s,b,y);else if(b.type==='arrow'){
  if(y+56>650)throw Error('Arrow overflow');s.shapes.add({geometry:'downArrow',position:{left:b.x??366,top:y,width:30,height:38},fill:C.accent,line:{fill:'none',width:0}});y+=60;
  }else throw Error(`Unknown block ${b.type}`);y+=b.after||0;}
  }

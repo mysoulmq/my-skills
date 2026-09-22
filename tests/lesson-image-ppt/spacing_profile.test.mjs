@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import {fitSpacing} from '../../skills/lesson-image-ppt/scripts/spacing_profile.mjs';
+const input=[{type:'paragraphs',items:[{ref:'a',focus:['关键']},{ref:'b'}]}];
+const measure=b=>b.items.reduce((n,o)=>n+40+(o.gap??b.gap??24),0);
+const original=JSON.stringify(input);
+const roomy=fitSpacing(input,300,measure);
+assert.equal(roomy.blocks[0].items[0].gap,44);
+assert.equal(roomy.blocks[0].before,12);
+assert.deepEqual(roomy.blocks[0].items[0].focus,['关键']);
+const tight=fitSpacing(input,140,measure);
+assert.ok(tight.review.used<=140);assert.ok(tight.review.fraction<1);
+const overflow=fitSpacing(input,100,measure);
+assert.equal(overflow.review.needsRepagination,true);assert.equal(overflow.review.fraction,0);
+assert.deepEqual(fitSpacing(input,300,measure,'preserve').blocks,input);
+assert.equal(JSON.stringify(input),original);
+assert.deepEqual(fitSpacing(roomy.blocks,300,measure).blocks,roomy.blocks);
+console.log('Spacing profile: roomy, constrained, overflow, preserve and repeatability passed');

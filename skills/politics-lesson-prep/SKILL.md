@@ -11,7 +11,7 @@ description: Use when preparing a complete senior-high politics lesson from hand
 
 图片环节调用已安装的 `lesson-image-ppt`：读取其 SKILL.md，遵守原图识读、知识组、标注、分页和动画要求。依赖可从当前 skill 的同级目录或 workspace 的 `.agents/skills` 解析；缺失时说明依赖，不复制替代流程。默认图片识读和讲义设计使用 `gpt-6-astra / low`，新增题目和教学组织使用 `gpt-5.6-sol / medium`。skill 不能自动改变当前模型；须通过明确支持模型配置的执行器执行，并核实真实配置，不能错标模型成绩。
 
-Word 用 `scripts/extract_docx.py` 提取，一轮只提取/识读一次。阶段间传必要内容，不附整段会话。三份课件和方案共用同一底稿；排版、动画写入、页码回填和覆盖检查由程序完成。修改时只更新受影响单元。
+Word 用 `scripts/extract_docx.py` 提取，一轮只提取/识读一次。阶段间传必要内容，不附整段会话。三份课件和方案共用同一底稿；排版、动画写入、页码回填和覆盖检查由程序完成。修改时只更新受影响单元。排布优先调用依赖的 comfortable 正文间距预设及题目渲染器的答案留白分配，不要求模型逐页重算坐标；模型只负责语义分组、短标签断句与失败页例外。
 
 实际执行脚本时读取 [执行与验证](references/running.md)，按共同教学序列构建各视图，不直接将两份成品前后拼接。
 
