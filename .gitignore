@@ -13,3 +13,10 @@ __pycache__/
 *.ttf
 *.ttc
 *.otf
+
+# Workspace-only skill entry; keep other local skills untracked.
+!/.agents/
+/.agents/*
+!/.agents/skills/
+/.agents/skills/*
+!/.agents/skills/worksheet-dual-doc
