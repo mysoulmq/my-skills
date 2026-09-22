@@ -15,6 +15,7 @@ REPO = Path(__file__).resolve().parents[2]
 CHECKER_PATH = REPO / "skills/lesson-image-ppt/scripts/check_pptx.py"
 SPEC = importlib.util.spec_from_file_location("lesson_pptx_check", CHECKER_PATH)
 CHECKER = importlib.util.module_from_spec(SPEC)
+sys.path.insert(0, str(CHECKER_PATH.parent))
 SPEC.loader.exec_module(CHECKER)
 
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
@@ -96,6 +97,26 @@ class ContentCheckTests(unittest.TestCase):
     def check(self, slides, source=None):
         write_pptx(self.pptx, slides)
         return CHECKER.check(source or self.source, self.pptx)
+
+    def test_authorized_number_omission_preserves_raw_and_checks_remainder(self):
+        source = {"units": [{"id": "x", "text": "①认识的对象是无限变化的。"}],
+                  "displayOmissions": [{"id": "x", "prefix": "①", "reason": "孤立编号",
+                                         "authorization": "用户明确要求"}]}
+        report = self.check({1: ["认识的对象是无限变化的。"]}, source)
+        self.assertTrue(report["passed"])
+        self.assertEqual(source["units"][0]["text"][0], "①")
+        self.assertEqual(len(report["displayOmissions"]), 1)
+        self.assertFalse(self.check({1: ["认识的对象。"]}, source)["passed"])
+        source.pop("displayOmissions")
+        self.assertFalse(self.check({1: ["认识的对象是无限变化的。"]}, source)["passed"])
+
+    def test_omission_cannot_delete_content_or_lack_authorization(self):
+        for prefix, authorization in [("认识", "用户要求"), ("①", "")]:
+            source = {"units": [{"id": "x", "text": prefix + "对象"}],
+                      "displayOmissions": [{"id": "x", "prefix": prefix,
+                                             "reason": "test", "authorization": authorization}]}
+            with self.assertRaises(ValueError):
+                self.check({1: ["对象"]}, source)
 
     def test_complete_ordered_body_passes(self):
         report = self.check({1: ["甲组先观察。"], 2: ["乙组再记录。"]})

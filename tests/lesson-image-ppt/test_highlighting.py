@@ -1,10 +1,12 @@
 import importlib.util
+import sys
 from pathlib import Path
 import unittest
 
 path = Path(__file__).resolve().parents[2] / "skills/lesson-image-ppt/scripts/prepare_marks.py"
 spec = importlib.util.spec_from_file_location("prepare_marks", path)
 module = importlib.util.module_from_spec(spec)
+sys.path.insert(0, str(path.parent))
 spec.loader.exec_module(module)
 
 

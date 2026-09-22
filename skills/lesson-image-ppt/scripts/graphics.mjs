@@ -23,7 +23,11 @@ function richLines(str,width,size=34,bold=false,emphasis=[],focus=[],contrast=[]
     if(g.ch==='\n'){out.push(row);row=[];used=0;continue;}
     if(row.length&&used+g.width>width-8){
       let carry=[];
-      if(closing.test(g.ch)||opening.test(row.at(-1).ch)){carry=[row.pop()];}
+      // Prefer a nearby phrase boundary over cutting a Chinese term in half.
+      let boundary=-1;
+      for(let i=row.length-1;i>=Math.floor(row.length*0.65);i--){if(/[，；、。！？：\s]/.test(row[i].ch)){boundary=i;break;}}
+      if(boundary>=0&&boundary<row.length-1){carry=row.splice(boundary+1);}
+      else if(closing.test(g.ch)||opening.test(row.at(-1).ch)){carry=[row.pop()];}
       out.push(row);row=carry;used=carry.reduce((a,x)=>a+x.width,0);
     }
     row.push(g);used+=g.width;
@@ -39,9 +43,9 @@ export function richTextRows(str,width,{size=34,bold=false,color=C.ink,emphasis=
     return runs.map(({run,hi,fc,ct,it})=>({run,textStyle:{bold:bold||hi||ct,italic:it,color:ct?'#FF0000':hi?C.accent:color,...(fc?{highlight:'#FFFF00'}:{}),typeface:FONT}}));
   });
 }
-export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter=''}={}){
+export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter='',lineSpacing=1.12}={}){
   const sh=s.shapes.add({geometry:'textbox',name:sourceId||`text-${s.id}-${s.shapes.items.length}`,position:{left:x,top:y,width:w,height:h},fill,line:{fill:stroke,width:stroke==='none'?0:1.2}});
-  sh.text.style={typeface:FONT,fontSize:size,bold,color,alignment:align,verticalAlignment:valign,autoFit:'none',wrap:'none',lineSpacing:1.12,insets:{top:pad,bottom:pad,left:pad,right:pad}};
+  sh.text.style={typeface:FONT,fontSize:size,bold,color,alignment:align,verticalAlignment:valign,autoFit:'none',wrap:'none',lineSpacing,insets:{top:pad,bottom:pad,left:pad,right:pad}};
   sh.text=richTextRows(str,w-2*pad,{size,bold,color,emphasis,focus,contrast,italicAfter});
   if(sourceId) recorded.push({slide:s._lessonNumber,id:sourceId,text:String(str)});
   return sh;

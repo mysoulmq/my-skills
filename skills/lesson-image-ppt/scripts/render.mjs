@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import {execFileSync} from 'node:child_process';
+import {fileURLToPath} from 'node:url';
 import {pathToFileURL} from 'node:url';
 import {FONT,C,text,line,node,connect,linesOf,richTextRows} from './graphics.mjs';
 const {Presentation,PresentationFile}=await import(pathToFileURL(path.join(process.env.LESSON_NODE_MODULES,'@oai/artifact-tool/dist/artifact_tool.mjs')));
@@ -8,31 +10,41 @@ if(!outPath)throw Error('Usage: node render.mjs source.json deck.json output-dir
 const out=path.resolve(outPath);await fs.mkdir(out,{recursive:true});
 const source=JSON.parse(await fs.readFile(sourcePath,'utf8'));
 const deck=JSON.parse(await fs.readFile(deckPath,'utf8'));
+try { execFileSync(process.env.LESSON_PYTHON||'python3', [fileURLToPath(new URL('./check_plan.py',import.meta.url)),sourcePath,deckPath,'--report',path.join(out,'plan-check.json')],{encoding:'utf8'}); }
+catch(e){throw Error(`Teaching plan check failed before rendering: ${e.stdout||e.message}`);}
+
 const hasMarks=o=>o&&typeof o==='object'&&(Array.isArray(o.marks)||Object.values(o).some(hasMarks));
 if(hasMarks(deck)&&deck._highlightPlan?.version!==1)throw Error('Compile marks with prepare_marks.py before rendering');
 const units=new Map(source.units.map(u=>[u.id,u]));
 if(units.size!==source.units.length)throw Error('Duplicate source IDs');
 const norm=s=>String(s).replace(/\s/g,'');
+const displayed=new Map(source.units.map(u=>[u.id,u.text])),omitted=new Set();
+for(const rule of source.displayOmissions??[]){
+ const {id,prefix,reason,authorization}=rule,raw=displayed.get(id);
+ if(!raw||omitted.has(id)||typeof prefix!=='string'||!/^([①-⑳]|[0-9]{1,2}[、.．])$/.test(prefix)||!String(reason??'').trim()||!String(authorization??'').trim()||!raw.startsWith(prefix)||!raw.slice(prefix.length).trim())throw Error(`Invalid authorized numbering omission: ${id}`);
+ omitted.add(id);displayed.set(id,raw.slice(prefix.length));
+}
+
 const allSource=source.units.map(u=>norm(u.text)).join('');
-const usage=[],summaryEvidence=[],revealPlan={slides:[]};const p=Presentation.create({slideSize:{width:1280,height:720}});
+const layoutReview=[];const usage=[],summaryEvidence=[],revealPlan={slides:[]};const p=Presentation.create({slideSize:{width:1280,height:720}});
 function resolve(o){
  if(typeof o==='string')o={ref:o};
- if(o.ref){const u=units.get(o.ref);if(!u)throw Error(`Unknown ref ${o.ref}`);const t=o.text??u.text;if(norm(t)!==norm(u.text))throw Error(`Text override changes source ${o.ref}`);return {...o,text:t};}
+ if(o.ref){const u=units.get(o.ref);if(!u)throw Error(`Unknown ref ${o.ref}`);const t=o.text??displayed.get(o.ref);if(norm(t)!==norm(displayed.get(o.ref)))throw Error(`Text override changes source ${o.ref}`);return {...o,text:t};}
  if(o.text && !allSource.includes(norm(o.text)))throw Error(`Diagram label not in source: ${o.text}`);
  return o;
 }
 function put(s,input,x,y,w,h,opts={}){const o=resolve(input);if(o.ref)usage.push({id:o.ref,slide:s._lessonNumber});return text(s,o.text,x,y,w,h,{...opts,...o,sourceId:o.ref||''});}
-function measure(o,w,size=32){return Math.ceil(linesOf(o.text,w,size,o.bold||false,[...(o.emphasis||[]),...(o.focus||[]),...(o.contrast||[])],o.italicAfter||'').length*size*1.3+8);}
+function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??1.12)+6);}
 function height(o,w,size=32){return measure(resolve(o),w,size);}
 function paraBlock(s,items,y,{x=56,w=1168,size=32,gap=15}={}){
- for(const input of items){const o=resolve(input);const sz=o.size||size;if(sz<30)throw Error('Body font must be at least 30px; split slide');const inset=o.bullet?64:(o.indent||0);const h=height(o,w-inset,sz);if(y+h>650)throw Error(`Slide ${s._lessonNumber}: body overflow; split slide (${o.ref||o.text})`);
+ for(const input of items){const o=resolve(input);const sz=o.size||size;if(sz<26)throw Error('Body font below 26px; review source grouping and layout');const inset=o.bullet?64:(o.indent||0);const h=height(o,w-inset,sz);if(y+h>650)throw Error(`Slide ${s._lessonNumber}: body overflow; split slide (${o.ref||o.text})`);
  if(o.bullet)text(s,'•',x+28,y,28,sz*1.5,{size:sz,color:C.accent,sourceId:o.ref?`${o.ref}--bullet`:''});
  put(s,o,x+inset,y,w-inset,h,{size:sz});y+=h+(o.gap??gap);
  }return y;
 }
 function branches(s,b,y){
  const rw=b.rootWidth||230,bx=rw+132,bw=1224-bx,size=b.size||32,gap=b.gap??22;
- if(size<30||b.items.some(o=>(resolve(o).size||size)<30))throw Error('Branch body font must be at least 30px; split slide');
+ if(size<26||b.items.some(o=>(resolve(o).size||size)<26))throw Error('Branch body font below 26px; review source grouping and layout');
  const hs=b.items.map(o=>height(o,bw,resolve(o).size||size));const needed=hs.reduce((a,v)=>a+v,0)+gap*(hs.length-1);
  if(y+needed>650)throw Error(`Slide ${s._lessonNumber}: branches overflow (${needed}px); split slide`);
  const root=resolve(b.root);if(/^[①②③④⑤⑥⑦⑧⑨⑩\d\s、.：:]+$/.test(root.text))throw Error('Meaningless number-only node');
@@ -45,7 +57,7 @@ function branches(s,b,y){
 }
 function table(s,b,y){
  const rows=b.rows.map(row=>row.map(resolve)),widths=b.widths||rows[0].map(()=>1168/rows[0].length),size=b.size||27;
- if(size<27)throw Error('Table font must be at least 27px; split table');
+ if(size<24)throw Error('Table font below 24px; review column widths and row grouping');
  if(Math.abs(widths.reduce((a,v)=>a+v,0)-1168)>1)throw Error('Table widths must sum to 1168');
  const heights=rows.map((row,i)=>Math.max(...row.map((o,c)=>height({...o,bold:i===0},widths[c]-20,size)))+14);
  if(y+heights.reduce((a,v)=>a+v,0)>650)throw Error(`Slide ${s._lessonNumber}: table overflow; split by rows`);
@@ -67,51 +79,65 @@ function mapLabel(input,separator='：'){
 function mapText(s,input,x,y,w,h,opt={}){const o=mapLabel(input);return text(s,o.text,x,y,w,h,{...opt,...o});}
 function brace(s,x,y,h,color,name){s.shapes.add({geometry:'leftBrace',name,position:{left:x,top:y,width:18,height:h},fill:'none',line:{fill:color,width:2.5}});}
 function referenceKnowledgeMap(s,d){
- const size=d.size||26;if(size<26)throw Error('Knowledge map too small; split by frame/topic');
  s.background.fill='#FFFFFF';
- const black='#000000',groupGap=24,topicGap=20,leafGap=12;
- const compact=d.groups.length===1&&d.groups[0].topics.length===1;
- const leafX=compact?362:638,leafWidth=1224-leafX;
- const groups=d.groups.map(g=>{const topics=g.topics.map(t=>{
-  const label=mapLabel(t.title),leaves=t.leaves.map(l=>{
-   if(!l.label?.ref||!l.label?.quote)throw Error('Each knowledge-map leaf needs label:{ref,quote} naming its knowledge point');
-   const o={...mapLabel(l,'——'),bold:l.bold??true,italicAfter:l.italicAfter??(l.separator??'——')};
-   if(o.size&&o.size!==size)throw Error('Set knowledge-map size on the slide, not individual leaves');
-   return {o,h:measure(o,leafWidth,size)};
-  });
-  const h=Math.max(measure({...label,bold:true},202,26),leaves.reduce((v,l)=>v+l.h,0)+leafGap*(leaves.length-1));
-  return {label,leaves,h};
- });const label=mapLabel(g.title);return {label,topics,h:Math.max(measure({...label,bold:true},216,26)+24,topics.reduce((v,t)=>v+t.h,0)+topicGap*(topics.length-1))};});
- const total=groups.reduce((v,g)=>v+g.h,0)+groupGap*(groups.length-1),available=compact?506:606;
- if(total>available)throw Error(`Reference knowledge map too tall (${total}); split by frame/topic instead of shrinking or dropping clues`);
- const top=(compact?136:36)+(available-total)/2;
- const box=(o,x,y,w,h,name,fontSize=26)=>node(s,o.text,x,y,w,h,{...o,size:fontSize,bold:true,color:black,fill:'none',stroke:black,pad:10,sourceId:name});
+ const black='#000000',cfg=d.mapLayout??{},compact=d.groups.length===1&&d.groups[0].topics.length===1;
+ const frameWidth=cfg.frameWidth??230,topicWidth=cfg.topicWidth??184;
+ const frameLineColor=cfg.frameLineColor??'#ED7D31',topicLineColor=cfg.topicLineColor??'#4472C4',leafLineColor=cfg.leafLineColor??'#4472C4';
+ for(const color of [frameLineColor,topicLineColor,leafLineColor])if(!/^#[0-9a-f]{6}$/i.test(color))throw Error('Map line colors must be #RRGGBB');
+ if(cfg.headingSize!==undefined&&(!Number.isFinite(cfg.headingSize)||cfg.headingSize<21||cfg.headingSize>36))throw Error('Map headingSize must be within 21–36px');
+ if(!Number.isFinite(frameWidth)||frameWidth<180||!Number.isFinite(topicWidth)||topicWidth<160)throw Error('Map frame/topic columns must be at least 180/160px');
+ const topicX=154+frameWidth+58,leafX=compact?362:topicX+topicWidth+24,leafWidth=1250-leafX;
+ if(leafWidth<400)throw Error('Map column widths must leave at least 400px for full memory clues');
+ const lineSpacing=cfg.lineSpacing??1.04,groupGap=cfg.groupGap??18,topicGap=cfg.topicGap??10,leafGap=cfg.leafGap??3;
+ for(const [key,v] of Object.entries({lineSpacing,groupGap,topicGap,leafGap}))if(!Number.isFinite(v)||v<0)throw Error(`Invalid mapLayout.${key}`);
+ if(lineSpacing<1)throw Error('Map line spacing below 1 risks clipping');
+ const minSize=cfg.minSize??22,maxSize=d.size??26;
+ if(minSize<21||minSize>maxSize||maxSize>36)throw Error('Map font range must be within 21–36px');
+ const prepared=d.groups.map(g=>({label:mapLabel(g.title),topics:g.topics.map(t=>({label:mapLabel(t.title),leaves:t.leaves.map(l=>{
+  if(!l.label?.ref||!l.label?.quote)throw Error('Each knowledge-map leaf needs label:{ref,quote} naming its knowledge point');
+  const o={...mapLabel(l,'——'),bold:l.bold??true,italicAfter:l.italicAfter??(l.separator??'——'),lineSpacing};
+  if(o.size)throw Error('Set map font range on the slide, not individual leaves');
+  return o;
+ })}))}));
+ const available=compact?548:684;let groups,total,size,headingSize;
+ for(size=maxSize;size>=minSize;size--){
+  headingSize=cfg.headingSize??Math.max(size,24);
+  groups=prepared.map(g=>{const topics=g.topics.map(t=>{
+   const leaves=t.leaves.map(o=>({o,h:measure(o,leafWidth,size)}));
+   const h=Math.max(measure({...t.label,bold:true,lineSpacing},topicWidth,headingSize),leaves.reduce((v,l)=>v+l.h,0)+leafGap*Math.max(0,leaves.length-1));
+   return {...t,leaves,h};
+  });return {...g,topics,h:Math.max(measure({...g.label,bold:true,lineSpacing},frameWidth-24,headingSize)+24,topics.reduce((v,t)=>v+t.h,0)+topicGap*Math.max(0,topics.length-1))};});
+  total=groups.reduce((v,g)=>v+g.h,0)+groupGap*Math.max(0,groups.length-1);
+  if(total<=available)break;
+ }
+ if(total>available)throw Error(`Slide ${s._lessonNumber}: whole-lesson map needs ${total}px at ${minSize}px; shorten evidence-backed memory clues or tune mapLayout; do not replace it with separate topic maps`);
+ const top=(compact?130:12)+(available-total)/2;
+ layoutReview.push({slide:s._lessonNumber,type:'knowledge-map',groups:groups.length,topics:groups.reduce((n,g)=>n+g.topics.length,0),leaves:groups.reduce((n,g)=>n+g.topics.reduce((m,t)=>m+t.leaves.length,0),0),size,headingSize,lineSpacing,total,available,top,leafX,leafWidth,frameWidth,topicWidth,frameLineColor,topicLineColor,leafLineColor,groupGap,topicGap,leafGap});
+ const box=(o,x,y,w,h,name,fontSize=headingSize)=>node(s,o.text,x,y,w,h,{...o,size:fontSize,bold:true,color:black,fill:'none',stroke:black,pad:12,lineSpacing,sourceId:name});
  if(compact){
-  put(s,deck.lesson,36,24,1208,44,{size:30,bold:true,color:black});
-  const g=groups[0],t=g.topics[0];
-  text(s,g.label.text,36,78,1208,44,{...g.label,size:24,color:black,sourceId:'map-frame-1'});
-  const rh=measure({...t.label,bold:true},210,28)+24;
-  box(t.label,56,top+(total-rh)/2,230,rh,'map-topic-1-1',28);
-  brace(s,324,top,total,'#00AFAF','map-brace-leaves-1-1');
+  put(s,deck.lesson,36,20,1208,44,{size:30,bold:true,color:black});
+  const g=groups[0],t=g.topics[0];text(s,g.label.text,36,74,1208,44,{...g.label,size:24,color:black,sourceId:'map-frame-1'});
+  const rh=measure({...t.label,bold:true,lineSpacing},206,headingSize)+24;
+  box(t.label,56,top+(total-rh)/2,230,rh,'map-topic-1-1');brace(s,324,top,total,leafLineColor,'map-brace-leaves-1-1');
   let y=top;const steps=[];
   for(const [li,l] of t.leaves.entries()){const name=`map-leaf-1-1-${li+1}`;text(s,l.o.text,leafX,y,leafWidth,l.h,{...l.o,size,color:black,sourceId:name});steps.push([name]);y+=l.h+leafGap;}
   if(d.reveal!==false)revealPlan.slides.push({slide:s._lessonNumber,steps});return;
  }
  const root=mapLabel(d.root||deck.lesson),vertical={...root,text:Array.from(root.text.replace(/\s/g,'')).join('\n')};
- const rootHeight=measure({...vertical,bold:true},44,29)+24;
- if(rootHeight>626)throw Error('Vertical lesson title too tall; use a compact topic map');
- box(vertical,20,36+(606-rootHeight)/2,64,rootHeight,'map-root',29);
- if(root.ref)usage.push({id:root.ref,slide:s._lessonNumber});
- brace(s,96,top,total,'#FF8000','map-brace-frames');
+ const rootSize=26,rootHeight=measure({...vertical,bold:true,lineSpacing},32,rootSize)+24;
+ if(rootHeight>684)throw Error('Vertical lesson title too tall; use a source-backed shorter title label');
+ box(vertical,20,12+(684-rootHeight)/2,56,rootHeight,'map-root',rootSize);
+ if(root.ref)usage.push({id:root.ref,slide:s._lessonNumber});brace(s,108,top,total,frameLineColor,'map-brace-frames');
  const steps=[];let gy=top;
  for(const [gi,g] of groups.entries()){
-  const fh=measure({...g.label,bold:true},216,26)+24;
-  box(g.label,124,gy+(g.h-fh)/2,236,fh,`map-frame-${gi+1}`);
-  brace(s,374,gy,g.h,'#4479D6',`map-brace-topics-${gi+1}`);let ty=gy;
+  const fh=measure({...g.label,bold:true,lineSpacing},frameWidth-24,headingSize)+24;
+  box(g.label,154,gy+(g.h-fh)/2,frameWidth,fh,`map-frame-${gi+1}`);
+  brace(s,topicX-28,gy,g.h,topicLineColor,`map-brace-topics-${gi+1}`);
+  const topicsTotal=g.topics.reduce((v,t)=>v+t.h,0)+topicGap*(g.topics.length-1);let ty=gy+(g.h-topicsTotal)/2;
   for(const [ti,t] of g.topics.entries()){
-   const th=measure({...t.label,bold:true},202,26);
-   text(s,t.label.text,400,ty+(t.h-th)/2,202,th,{...t.label,size:26,bold:true,color:black,sourceId:`map-topic-${gi+1}-${ti+1}`});
-   brace(s,612,ty,t.h,'#00AFAF',`map-brace-leaves-${gi+1}-${ti+1}`);
+   const th=measure({...t.label,bold:true,lineSpacing},topicWidth,headingSize);
+   text(s,t.label.text,topicX,ty+(t.h-th)/2,topicWidth,th,{...t.label,size:headingSize,lineSpacing,bold:true,color:black,sourceId:`map-topic-${gi+1}-${ti+1}`});
+   brace(s,leafX-24,ty,t.h,leafLineColor,`map-brace-leaves-${gi+1}-${ti+1}`);
    steps.push([`map-topic-${gi+1}-${ti+1}`,`map-brace-leaves-${gi+1}-${ti+1}`]);let ly=ty;
    for(const [li,l] of t.leaves.entries()){const name=`map-leaf-${gi+1}-${ti+1}-${li+1}`;text(s,l.o.text,leafX,ly,leafWidth,l.h,{...l.o,size,color:black,sourceId:name});steps.push([name]);ly+=l.h+leafGap;}
    ty+=t.h+topicGap;
@@ -169,18 +195,20 @@ for(let i=0;i<deck.slides.length;i++){
  put(s,title,56,89,1168,74,{size:titleSize,bold:true,color:C.navy});
  if(d.topic)put(s,d.topic,58,163,1164,45,{size:29,bold:true,color:C.accent});
  line(s,56,213,1168,0,C.line,1.2);
- let y=238;
- for(const b of d.blocks){if(b.type==='paragraphs')y=paraBlock(s,b.items,y,b);else if(b.type==='branches')y=branches(s,b,y);else if(b.type==='table')y=table(s,b,y);else if(b.type==='arrow'){
+ let y=d.bodyTop??238;
+ if(!Number.isFinite(y)||y<218||y>500)throw Error('bodyTop must be within 218–500px');
+ for(const b of d.blocks){if((b.before??0)<0||(b.after??0)<0)throw Error('Block spacing must be nonnegative');y+=b.before??0;if(b.type==='paragraphs')y=paraBlock(s,b.items,y,b);else if(b.type==='branches')y=branches(s,b,y);else if(b.type==='table')y=table(s,b,y);else if(b.type==='arrow'){
  if(y+56>650)throw Error('Arrow overflow');s.shapes.add({geometry:'downArrow',position:{left:b.x??366,top:y,width:30,height:38},fill:C.accent,line:{fill:'none',width:0}});y+=60;
  }else throw Error(`Unknown block ${b.type}`);y+=b.after||0;}
  }
  if(d.type!=='knowledge-map'&&d.revealSteps?.length)revealPlan.slides.push({slide:i+1,steps:d.revealSteps});
- text(s,`讲义第${d.page}页`,56,674,600,30,{size:18,color:C.muted});text(s,`${String(i+1).padStart(2,'0')} / ${deck.slides.length}`,1090,674,134,30,{size:18,color:C.muted,align:'right'});
+ if(d.type!=='knowledge-map')text(s,`讲义第${d.page}页`,56,674,600,30,{size:18,color:C.muted});
 }
 const covered=new Set(usage.map(u=>u.id));const missing=source.units.filter(u=>!covered.has(u.id));if(missing.length)throw Error(`Unplaced source units: ${missing.map(u=>u.id).join(',')}`);
 await (await PresentationFile.exportPptx(p)).save(path.join(out,'candidate.pptx'));
 await fs.mkdir(path.join(out,'previews'),{recursive:true});
 for(let i=0;i<p.slides.items.length;i++){const s=p.slides.items[i],id=String(i+1).padStart(2,'0');const im=await p.export({slide:s,format:'png',scale:1});await fs.writeFile(path.join(out,`previews/${id}.png`),new Uint8Array(await im.arrayBuffer()));}
-await fs.writeFile(path.join(out,'coverage.json'),JSON.stringify({units:source.units.length,usage,summaryEvidence},null,2));
+await fs.writeFile(path.join(out,'layout-review.json'),JSON.stringify(layoutReview,null,2));
+await fs.writeFile(path.join(out,'coverage.json'),JSON.stringify({units:source.units.length,usage,summaryEvidence,displayOmissions:source.displayOmissions??[]},null,2));
 await fs.writeFile(path.join(out,'reveal-plan.json'),JSON.stringify(revealPlan,null,2));
 console.log(JSON.stringify({slides:p.slides.items.length,units:source.units.length,candidate:path.join(out,'candidate.pptx')}));

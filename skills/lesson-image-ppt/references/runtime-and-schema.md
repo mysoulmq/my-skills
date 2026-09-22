@@ -1,5 +1,7 @@
 # 数据格式与运行
 
+本页介绍从 source.json 与 deck.json 新建 PPT 的渲染器。开发时按 [从人工样本提炼生成规则](sample-learning.md) 校准生成效果；固定坐标和字号下限不是样本验收标准。遇到能力不足，应修正配置或脚本，不能导入已有课件替代生成。
+
 先调用 `load_workspace_dependencies` 获取 Node、Python 和 node_modules。设置：
 
 - `LESSON_NODE_MODULES`：捆绑 node_modules 绝对路径（含 @oai/artifact-tool 与 @napi-rs/canvas）。
@@ -7,10 +9,13 @@
 - `LESSON_FONT_FAMILY`：默认 `Microsoft YaHei`；替换字体须先验证简体字形和实际排版。
 
 ```sh
+"$LESSON_PYTHON" /absolute/skill/scripts/check_plan.py /absolute/source.json /absolute/deck.json --report /absolute/plan-check.json
 "$LESSON_PYTHON" /absolute/skill/scripts/prepare_marks.py /absolute/source.json /absolute/deck.json /absolute/styled-deck.json --report /absolute/highlight-review.json
 "$LESSON_NODE" /absolute/skill/scripts/render.mjs /absolute/source.json /absolute/styled-deck.json /absolute/run
 "$LESSON_PYTHON" /absolute/skill/scripts/check_pptx.py /absolute/source.json /absolute/run/candidate.pptx --report /absolute/run/content-check.json
 ```
+
+先按[识读复核与知识组分页](transcription-and-grouping.md)完成直接识图及重要内容复核。所有渲染须声明 `knowledgeGroups` 并通过计划检查；旧计划重新生成时也要先补录语义分组。`render.mjs` 会强制调用计划检查，不能只依赖 source→PPT 覆盖检查。
 
 ## source.json
 
@@ -20,14 +25,16 @@
  {"id":"frame1","kind":"heading","page":"3","text":"第一框　人的认识从何而来"},
  {"id":"topic1","kind":"heading","page":"3","text":"一、认识和实践"},
  {"id":"point1","kind":"body","page":"3","text":"1、含义：是主体对客体的能动反映。"}
-]}
+],"knowledgeGroups":[{"id":"recognition-definition","members":["point1"]}]}
 ```
+
+`text` 是核定授课文字；确认的最小笔误修正、用户指定的标题末尾悬空破折号省略，均保留 `originalText` 与 `editReason`，不能变成知识改写。
 
 原子单元按原图顺序排列；表格按行拆为单元格，包含原表列名/行名。标题和重复表头 kind=heading；正文 kind=body。每个单元独立记录，禁止把很多段粘成一个单元。跨页句子按实际完整语义接续，不丢页首尾。
 
 ## deck.json
 
-所有文字引用使用 `{ "ref":"point1" }` 或简写 `"point1"`。不要重写原文。只用于框图的重复概念标签可用 `{ "text":"实践" }`，脚本要求标签来自原文。要手动断行可加 `text`，其去空白内容必须与引用原文完全一致。新标注使用 [marks格式](highlighting.md)，先判教学角色再编译样式；旧 `emphasis/focus/contrast` 数组兼容保留，但不能代替标注理由。
+所有文字引用使用 `{ "ref":"point1" }` 或简写 `"point1"`。不要在排版阶段改写核定稿。只用于框图的重复概念标签可用 `{ "text":"实践" }`，脚本要求标签来自原文。要手动断行可加 `text`，其去空白内容必须与引用原文完全一致。新标注使用 [marks格式](highlighting.md)，先判教学角色再编译样式；旧 `emphasis/focus/contrast` 数组兼容保留，但不能代替标注理由。
 
 ```json
 {"lesson":"lesson","slides":[
@@ -38,9 +45,9 @@
 ]}
 ```
 
-`overview` 是兼容旧稿的三层目录树，最多3个框；不能替代下文 `knowledge-map` 的四层知识导航。新课首页优先采用四层导航，过密时按框拆页。可用 kicker 引用原文“【知识点突破】”，原图没有则不加。
+`overview` 是兼容旧稿的三层目录树，最多3个框；不能替代下文 `knowledge-map` 的四层知识导航。新课首页优先采用单页四层整课导航，先精简有证据的记忆线索及调节列宽、间距。可用 kicker 引用原文“【知识点突破】”，原图没有则不加。
 
-content 页标题为原稿目标题，topic 可放原稿次级标题或当前小点。全部元素按引用顺序显示。默认正文从 y=238 排到650，页脚不占正文。
+content 页标题为原稿目标题，topic 可放原稿次级标题或当前小点。全部元素按引用顺序显示。默认正文从 y=238 排到650；可设 bodyTop（218—500）匹配页型起点，左下角讲义来源标识不占正文；不生成右下角幻灯片页码角标。
 
 blocks 支持：
 
@@ -49,9 +56,9 @@ blocks 支持：
 - `table`：`rows:[[引用…],…]`，`widths:[…]`总和1168，默认字号27。第一行视为表头，可跨页重复原表头。渲染器不合并单元格；原稿合并项通过重复其原有标签呈现，不增加不同含义。
 - `arrow`：确有推导关系时放在两个段落块之间，默认在 x=366 显示短实心向下箭头；可设置 x。正文不变。
 
-每块可设 after 增加后距。不要负间距。段落、分支、表格不足以表达时，可在独立构建脚本中使用同目录 graphics.mjs 的可编辑图形方法；保持全部原文映射和相同验收，不能靠隐藏文字骗过覆盖检查。
+每块可设 before/after 增加前后距，以知识组整体的位置和留白贴近样本。不要负间距。段落、分支、表格不足以表达时，可在独立构建脚本中使用同目录 graphics.mjs 的可编辑图形方法；保持全部原文映射和相同验收，不能靠隐藏文字骗过覆盖检查。
 
-标题过长或正文溢出会报错。拆页是正常步骤，正文不低于30、表格不低于27、导航叶不低于26；不要删原文或改成截图。重复上层标题保持导航；一个原文单元过长可在 source.json 按语义拆成连续子单元。
+标题过长或正文溢出会报错。拆页是正常步骤，正文通常30–34px（下限26）、表格通常24–27px（下限24）、参考式导航叶通常22–26px（下限21）；不要删原文或改成截图。重复上层标题保持导航；一个原文单元过长可在 source.json 按语义拆成连续子单元。
 
 ## 输出与终检
 
@@ -61,7 +68,7 @@ render.mjs 生成 candidate.pptx、previews/、coverage.json 和 reveal-plan.jso
 
 ## 四层知识导航图（新）
 
-`type:"knowledge-map"` 将课→框→目→知识点/记忆线索同时展开。与仅列课、框、目标题的 overview 不同；一课可分成按框划分的若干导航页，避免强挤全课。`mapStyle:"reference"` 为默认：贴近人工样本的白底黑字、无填充细黑框、窄竖向课题与分级括线。`mapStyle:"teal"` 兼容旧浅蓝节点风格。正文默认26以上。
+`type:"knowledge-map"` 将课→框→目→知识点/记忆线索同时展开。与仅列课、框、目标题的 overview 不同；首页优先保留整课结构，不能因为通用字号造成的假性溢出拆成分目目录。`mapStyle:"reference"` 为默认：贴近人工样本的白底黑字、无填充细黑框、窄竖向课题与外橙内蓝括线。`mapStyle:"teal"` 兼容旧浅蓝节点风格。参考式图以26px起步，按实测高度在22–26px范围内适配，标题默认不低于24px，密集页可用 `mapLayout.headingSize` 单独调整（21–36px），须以分点可辨为验收依据；这对应样本约16–18pt的密集导航，不使用正文大字号约束。
 
 ```json
 {"type":"knowledge-map","page":"3—4","root":{"text":"探索认识的奥秘"},
@@ -81,3 +88,21 @@ render.mjs 生成 candidate.pptx、previews/、coverage.json 和 reveal-plan.jso
 - `contrast:["标题核心词"]`：红色，导航的层级标题中少量使用；字段名为兼容旧版保留，不代表只有对比才允许红字。
 
 颜色必须承担当前页型下稳定的教学角色。不能把所有原有粗体都改黄，不能满页红字。无需每页三种颜色都用。`prepare_marks.py` 会生成样式数组与审稿表；编译只是执行标注计划，教学理由须由模型按原文和学科关系复核。
+
+## 紧凑参考式脑图参数
+
+`mapStyle:"reference"` 从图片来源数据新建对象，不导入样本页。整课图右侧叶区默认x=650、宽600，顶部/底部留白内可用684px；不加底部页码和来源脚注挤占导航区。`size` 是尝试的最大叶字号，默认26；`mapLayout:{minSize:22,lineSpacing:1.04,groupGap:18,topicGap:10,leafGap:3,frameWidth:230,topicWidth:184}` 可调整。多框导航的框/目列宽可按标题长度调整，叶区与括线随动；框/目至少180/160px，叶区至少400px。标题断词时先调列宽或使用保序换行，再测整页；不能只增大字号或截去标题。渲染器按实测富文本换行选择能放下的字号，不能低于21px；仍放不下时报错，先回到原文摘要与关系聚合，不删知识点，也不自动拆图。`layout-review.json` 记录实际字号、框/目/叶数量和占用高度。
+
+正文与导航的高度测量使用实际富文本字重、换行和行距；不要再按固定1.3倍行高推断必须拆页。知识点入口与完整从属解释应合在同一页，先检验真实占用；定义—形式、三条并列原因等能同页读清时不要分散。
+
+### 用户指定的编号呈现例外
+
+原始转录保留编号。仅当用户已经要求省略某个孤立编号时，在 `source.json` 顶层记录 `displayOmissions`：
+
+```json
+{"displayOmissions":[{"id":"原文单元ID","prefix":"①","reason":"并列分支仅首项带编号，呈现突兀","authorization":"用户本轮明确要求省略该编号"}]}
+```
+
+`deck` 仍使用该单元的 `ref`，不要覆写正文。编译、渲染和内容检查使用省略该前缀后的文字，报告保留例外记录。只支持首部编号，不允许通过此机制删除知识内容。不要自行填写授权、默认清除全部编号，或把一次具体反馈扩大到其他段落。例如对象／主体／基础并列图中用户指定的孤立①可以省略；其他层级编号、题号仍按原图保留。
+
+`mapLayout.frameLineColor/topicLineColor/leafLineColor` 分别控制课→框、框→目、目→叶括线，默认 `#ED7D31/#4472C4/#4472C4`，值须为 `#RRGGBB`。紧凑单框单目图使用 `leafLineColor`。颜色及实际字号、间距写入 `layout-review.json` 供复核；节点边框颜色不随括线改变。`headingSize` 不改变叶字号范围，勿仅缩叶字而让中间标题仍挤在一起。

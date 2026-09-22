@@ -1,0 +1,16 @@
+{
+  "school": "富阳二中",
+  "cohort": "2027",
+  "subject": "政治",
+  "stage": "高三上",
+  "document_kind": "作业",
+  "practice_series": "综合练",
+  "practice_number": "2",
+  "compiler": "罗典",
+  "proofreader": "陈蕾",
+  "class_label": "班级",
+  "student_number_label": "学号",
+  "student_name_label": "姓名",
+  "target_analysis_pages": 4,
+  "analysis_fill_threshold": 0.9
+}

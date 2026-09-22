@@ -1,4 +1,4 @@
 interface:
   display_name: "教案图片转授课 PPT"
-  short_description: "逐字保留精编教案，生成层级清楚、框图与分点合理搭配的可编辑课件"
-  default_prompt: "使用 $lesson-image-ppt 将教案图片按课生成可编辑授课 PPT，保留全部原文及顺序并逐页核验。"
+  short_description: "忠实保留教案知识与逻辑，生成层级清楚、框图与分点合理搭配的可编辑课件"
+  default_prompt: "使用 $lesson-image-ppt 将教案图片按课生成可编辑授课 PPT，保留全部教学内容与顺序，按教学影响复核并逐页核验。"

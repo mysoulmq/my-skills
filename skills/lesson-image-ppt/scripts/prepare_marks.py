@@ -3,6 +3,7 @@ import argparse
 from copy import deepcopy
 import json
 from pathlib import Path
+from source_policy import display_units
 import re
 import sys
 
@@ -19,6 +20,7 @@ def compile_marks(source, deck):
     units = {u["id"]: u["text"] for u in source["units"]}
     if len(units) != len(source["units"]):
         raise ValueError("Duplicate source IDs")
+    displayed = display_units(source)
     result = deepcopy(deck)
     report = {"marks": [], "legacyUnexplained": [], "axisGroups": {},
               "scope": "Evidence and style checks only; independently review teaching reasons and logic."}
@@ -40,8 +42,8 @@ def compile_marks(source, deck):
             ref = obj["ref"]
             if ref not in units:
                 raise ValueError(f"Unknown ref {ref}")
-            text = obj.get("text", units[ref])
-            if norm(text) != norm(units[ref]):
+            text = obj.get("text", displayed[ref])
+            if norm(text) != norm(displayed[ref]):
                 raise ValueError(f"Text override changes source {ref}")
             return text, {ref}
         return obj.get("text", ""), refs

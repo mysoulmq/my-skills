@@ -1,0 +1,4 @@
+interface:
+  display_name: "精品解析试题转换"
+  short_description: "将精品解析原卷与解析版转换为综合练选择题主观题及解析三件套"
+  default_prompt: "使用 $boutique-exam-converter 将精品解析原卷版和解析版转换为综合练选择题、主观题及解析。"
