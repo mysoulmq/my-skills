@@ -20,6 +20,6 @@
 
 题目视觉字段：totalScore（正数）＋totalScoreSource（明确来源）用于补充原设问缺失的已知总分，原prompt及原文保留；不同来源分值冲突拒绝静默覆盖。不要仅因word漏分而忽略同题截图的分值。答案score表示已有依据的分支得分，scoreLabel保留评分对象；无原始依据的分项只能明确作为教学拟分，totalScore不自动平均分摊。
 
-原生脑图标注：题目taskFocus/materialFocus，分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。Focus是当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，不能只写序号，不增加答案点。完整原理与应用仍用原字段保留。
+原生脑图标注：题目taskFocus（仅用于分析区的任务解释），分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。materialFocus 为兼容旧底稿可保留但渲染器忽略，不再生成；原题材料与顶部设问不自动高亮。其余 Focus 是分析区或答案脑图当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，不能只写序号，不增加答案点。完整原理与应用仍用原字段保留。
 
 缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图首次题目页回填，合入短备注，不能挤成四行；预留该页一行给预测依据。

@@ -9,6 +9,20 @@ from pptx_views import ordered_slides
 from check_teaching import norm
 
 A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
+P='{http://schemas.openxmlformats.org/presentationml/2006/main}'
+
+
+def highlighted_question_shapes(root, question_id):
+    names=[]
+    for shape in root.iter(P+'sp'):
+        props=shape.find('.//'+P+'cNvPr')
+        name=props.get('name','') if props is not None else ''
+        if (name==question_id+'-material' or
+                name.startswith(question_id+'-material-') and name.endswith('-body') or
+                name==question_id+'-prompt') and shape.find('.//'+A+'highlight') is not None:
+            names.append(name)
+    return names
+
 
 
 def check(pptx,questions,mapping):
@@ -20,6 +34,8 @@ def check(pptx,questions,mapping):
             if page.get('questionId')!=q['id']:continue
             number=page['page'] if 'page' in page else page['sourceSlide']
             root=ET.fromstring(files[order[number-1]])
+            for name in highlighted_question_shapes(root,q['id']):
+                errors.append(f'{q["id"]}: page {number} unexpected question highlight in {name}')
             text=''.join(t.text or '' for t in root.iter(A+'t'))
             grouped.setdefault(page['kind'],[]).append(norm(text))
             if q.get('totalScore') is not None and not any(float(v)==q['totalScore'] for v in re.findall(r'[（(]\s*(\d+(?:\.\d+)?)\s*分(?:[，,]\s*预测)?\s*[）)]',text)):

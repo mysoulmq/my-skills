@@ -37,7 +37,7 @@ function add(q,kind,part,material,size){
   s.speakerNotes.textFrame.setText(cues.join('\n'));
  }
  shape(s,'rect',12,16,578,688,{name:`${id}-material-border`,color:C.border,width:2});
- put(s,material,24,27,554,{size,font:F.material,name:kind==='material'?`${q.id}-material-${part}-body`:`${q.id}-material`,focus:(q.materialFocus||[]).filter(t=>material.includes(t))});
+ put(s,material,24,27,554,{size,font:F.material,name:kind==='material'?`${q.id}-material-${part}-body`:`${q.id}-material`});
  const ph=h(prompt,626,T.type.prompt,{bold:true})+16;
  shape(s,'rect',610,16,654,ph,{name:`${id}-prompt-bar`,color:C.prompt,fill:C.prompt,width:0});
  put(s,prompt,624,24,626,{size:T.type.prompt,bold:true,color:C.promptText,name:`${q.id}-prompt`});
