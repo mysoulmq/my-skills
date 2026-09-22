@@ -17,6 +17,8 @@ def manifests(knowledge_pptx, question_pptx, question_pages, sequence, plan):
     if knowledge_pptx!='-':
         with ZipFile(knowledge_pptx) as z:
             total=len(ordered_slides({n:z.read(n) for n in z.namelist()}))
+    if total and (not sequence or sequence[0].get('knowledgePage')!=1):
+        raise ValueError('Complete lesson must open with the knowledge overview mind map (knowledgePage 1), before diagnostic questions')
     known={a['id'] for p in plan['periods'] for a in p['activities']}
     pages=[];knowledge=[];selected=set()
     allq={(p['questionId'],p.get('stage','teaching')) for p in question_pages}
