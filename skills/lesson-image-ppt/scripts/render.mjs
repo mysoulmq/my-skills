@@ -34,16 +34,16 @@ function resolve(o){
  return o;
 }
 function put(s,input,x,y,w,h,opts={}){const o=resolve(input);if(o.ref)usage.push({id:o.ref,slide:s._lessonNumber});return text(s,o.text,x,y,w,h,{...opts,...o,sourceId:o.ref||''});}
-function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??1.12)+6);}
+function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??1.30)+6);}
 function height(o,w,size=32){return measure(resolve(o),w,size);}
-function paraBlock(s,items,y,{x=56,w=1168,size=32,gap=15}={}){
+function paraBlock(s,items,y,{x=56,w=1168,size=32,gap=24}={}){
  for(const input of items){const o=resolve(input);const sz=o.size||size;if(sz<26)throw Error('Body font below 26px; review source grouping and layout');const inset=o.bullet?64:(o.indent||0);const h=height(o,w-inset,sz);if(y+h>650)throw Error(`Slide ${s._lessonNumber}: body overflow; split slide (${o.ref||o.text})`);
  if(o.bullet)text(s,'•',x+28,y,28,sz*1.5,{size:sz,color:C.accent,sourceId:o.ref?`${o.ref}--bullet`:''});
  put(s,o,x+inset,y,w-inset,h,{size:sz});y+=h+(o.gap??gap);
  }return y;
 }
 function branches(s,b,y){
- const rw=b.rootWidth||230,bx=rw+132,bw=1224-bx,size=b.size||32,gap=b.gap??22;
+ const rw=b.rootWidth||230,bx=rw+132,bw=1224-bx,size=b.size||32,gap=b.gap??32;
  if(size<26||b.items.some(o=>(resolve(o).size||size)<26))throw Error('Branch body font below 26px; review source grouping and layout');
  const hs=b.items.map(o=>height(o,bw,resolve(o).size||size));const needed=hs.reduce((a,v)=>a+v,0)+gap*(hs.length-1);
  if(y+needed>650)throw Error(`Slide ${s._lessonNumber}: branches overflow (${needed}px); split slide`);
@@ -59,12 +59,12 @@ function table(s,b,y){
  const rows=b.rows.map(row=>row.map(resolve)),widths=b.widths||rows[0].map(()=>1168/rows[0].length),size=b.size||27;
  if(size<24)throw Error('Table font below 24px; review column widths and row grouping');
  if(Math.abs(widths.reduce((a,v)=>a+v,0)-1168)>1)throw Error('Table widths must sum to 1168');
- const heights=rows.map((row,i)=>Math.max(...row.map((o,c)=>height({...o,bold:i===0},widths[c]-20,size)))+14);
+ const heights=rows.map((row,i)=>Math.max(...row.map((o,c)=>height({...o,bold:i===0,lineSpacing:1.20},widths[c]-20,size)))+14);
  if(y+heights.reduce((a,v)=>a+v,0)>650)throw Error(`Slide ${s._lessonNumber}: table overflow; split by rows`);
  const vals=rows.map((row,i)=>row.map((o,c)=>{if(o.ref)usage.push({id:o.ref,slide:s._lessonNumber});return linesOf(o.text,widths[c]-20,size,i===0,o.emphasis||[]).join('\n');}));
  const t=s.tables.add({rows:rows.length,columns:rows[0].length,left:56,top:y,width:1168,height:heights.reduce((a,v)=>a+v,0),columnWidths:widths,values:vals});
  heights.forEach((h,i)=>t.rows[i].height=h);t.borders.assign({fill:C.line,width:1,style:'solid'});
- for(let r=0;r<rows.length;r++)for(let c=0;c<rows[0].length;c++){const cell=t.getCell(r,c);cell.fill=r===0?C.accent:c===0?C.light:'#FFFFFF';cell.text.style={typeface:FONT,fontSize:size,bold:r===0,color:r===0?'#FFFFFF':C.ink,alignment:r===0||c===0?'center':'left',verticalAlignment:'middle',autoFit:'none',lineSpacing:1.05,insets:{left:10,right:10,top:6,bottom:6}};cell.value=richTextRows(rows[r][c].text,widths[c]-20,{...rows[r][c],size,bold:r===0||rows[r][c].bold||false,color:r===0?'#FFFFFF':C.ink});}
+ for(let r=0;r<rows.length;r++)for(let c=0;c<rows[0].length;c++){const cell=t.getCell(r,c);cell.fill=r===0?C.accent:c===0?C.light:'#FFFFFF';cell.text.style={typeface:FONT,fontSize:size,bold:r===0,color:r===0?'#FFFFFF':C.ink,alignment:r===0||c===0?'center':'left',verticalAlignment:'middle',autoFit:'none',lineSpacing:1.20,insets:{left:10,right:10,top:6,bottom:6}};cell.value=richTextRows(rows[r][c].text,widths[c]-20,{...rows[r][c],size,bold:r===0||rows[r][c].bold||false,color:r===0?'#FFFFFF':C.ink});}
  return y+heights.reduce((a,v)=>a+v,0)+26;
 }
 function mapLabel(input,separator='：'){
@@ -88,7 +88,7 @@ function referenceKnowledgeMap(s,d){
  if(!Number.isFinite(frameWidth)||frameWidth<180||!Number.isFinite(topicWidth)||topicWidth<160)throw Error('Map frame/topic columns must be at least 180/160px');
  const topicX=154+frameWidth+58,leafX=compact?362:topicX+topicWidth+24,leafWidth=1250-leafX;
  if(leafWidth<400)throw Error('Map column widths must leave at least 400px for full memory clues');
- const lineSpacing=cfg.lineSpacing??1.04,groupGap=cfg.groupGap??18,topicGap=cfg.topicGap??10,leafGap=cfg.leafGap??3;
+ const lineSpacing=cfg.lineSpacing??(compact?1.25:1.04),groupGap=cfg.groupGap??(compact?28:18),topicGap=cfg.topicGap??(compact?18:10),leafGap=cfg.leafGap??(compact?10:3);
  for(const [key,v] of Object.entries({lineSpacing,groupGap,topicGap,leafGap}))if(!Number.isFinite(v)||v<0)throw Error(`Invalid mapLayout.${key}`);
  if(lineSpacing<1)throw Error('Map line spacing below 1 risks clipping');
  const minSize=cfg.minSize??22,maxSize=d.size??26;

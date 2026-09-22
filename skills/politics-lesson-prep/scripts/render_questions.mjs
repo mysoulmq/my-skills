@@ -90,20 +90,27 @@ for(const q of data.questions){
  }
  // Complete answer points remain complete, each with native branches and original sample typography.
  const scoreText=a=>a.score===undefined?'':`（${(a.scoreLabel||'本点').replace(/(?:预测|拟分)[：:]?/g,'')}${a.score}分）`;
- const aw=490;
- const bh=a=>Math.max(h(a.branchLabel||'原理与应用',102,22,{bold:true}),h(a.principle,aw,24,{bold:true})+h(a.application,aw,24)+ (a.score===undefined?0:h(scoreText(a),aw,24,{font:F.label,bold:true})))+32;
+ const aw=490,answerStyle={lineSpacing:1.30},innerGap=16,scoreGap=10,branchGap=40;
+ const answerH=(text,extra={})=>h(text,aw,24,{...answerStyle,...extra});
+ const labelText=a=>a.branchLabelDisplay||a.branchLabel||'原理与应用';
+ const labelH=a=>h(labelText(a),102,22,{bold:true,lineSpacing:1.25});
+ const contentH=a=>Math.max(labelH(a),answerH(a.principle,{bold:true})+innerGap+answerH(a.application)+(a.score===undefined?0:scoreGap+answerH(scoreText(a),{font:F.label,bold:true})));
+ const bh=a=>contentH(a)+branchGap;
  for(const [part,items] of paginate(q.answer,696-top,bh).entries()){
-  const {s}=add(q,'answer',part+1,material,size);let y=top;const steps=[];
+  for(const a of items)if(a.branchLabelDisplay&&a.branchLabelDisplay.replace(/\s/g,'')!==(a.branchLabel||'').replace(/\s/g,''))throw Error('branchLabelDisplay may only add semantic line breaks');
+  const spare=Math.max(0,696-top-items.reduce((n,a)=>n+bh(a),0));
+  const extra=items.length>1?Math.min(64,spare/(items.length-1)):0;
+  const {s}=add(q,'answer',part+1,material,size);let y=top+Math.min(24,Math.max(0,(spare-extra*(items.length-1))/2));const steps=[];
   for(const [i,a] of items.entries()){
-   const index=q.answer.indexOf(a)+1,name=`${q.id}-answer-${part+1}-${i+1}`,hh=bh(a)-24;
-   put(s,a.branchLabel||'原理与应用',616,y+Math.max(0,(hh-h(a.branchLabel||'原理与应用',102,22,{bold:true}))/2),102,{size:22,bold:true,name:name+'-root'});
+   const name=`${q.id}-answer-${part+1}-${i+1}`,hh=contentH(a);
+   put(s,labelText(a),616,y+Math.max(0,(hh-labelH(a))/2),102,{size:22,bold:true,lineSpacing:1.25,name:name+'-root'});
    const bs=brace(s,720,y,hh,name+'-brace',C.outerBrace);
-   const ph=put(s,a.principle,750,y,aw,{bold:true,focus:a.principleFocus||[],name:name+'-principle'});
-   put(s,a.application,750,y+ph+4,aw,{color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
+   const ph=put(s,a.principle,750,y,aw,{...answerStyle,bold:true,focus:a.principleFocus||[],name:name+'-principle'});
+   put(s,a.application,750,y+ph+innerGap,aw,{...answerStyle,color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
    const group=[name+'-root',...bs,name+'-principle',name+'-application'];
    if(a.score!==undefined){if(!q.scoreBasis||q.scoreBasis.includes('无原始分值'))throw Error(`${q.id}: answer score without basis`);
-    put(s,scoreText(a),750,y+ph+h(a.application,aw,24)+4,aw,{font:F.label,bold:true,color:C.score,name:name+'-score'});group.push(name+'-score');}
-   steps.push(group);y+=bh(a);
+    put(s,scoreText(a),750,y+ph+innerGap+answerH(a.application)+scoreGap,aw,{...answerStyle,font:F.label,bold:true,color:C.score,name:name+'-score'});group.push(name+'-score');}
+   steps.push(group);y+=bh(a)+extra;
   }
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }

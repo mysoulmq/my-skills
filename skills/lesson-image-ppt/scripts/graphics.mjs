@@ -1,3 +1,4 @@
+import {wrapGlyphs} from './line_breaks.mjs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -17,23 +18,7 @@ function richLines(str,width,size=34,bold=false,emphasis=[],focus=[],contrast=[]
   for(const [words,set] of [[focus,fm],[contrast,cm]])for(const word of words){let i=0;while(word&&(i=src.indexOf(word,i))>=0){for(let k=i;k<i+word.length;k++)set.add(k);i+=word.length;}}
   for(const word of emphasis){let i=0;while(word&&(i=src.indexOf(word,i))>=0){for(let k=i;k<i+word.length;k++)mask.add(k);i+=word.length;}}
   let offset=0;const glyphs=Array.from(src).map(ch=>{const hi=mask.has(offset),fc=fm.has(offset),ct=cm.has(offset),it=offset>=italicAt;offset+=ch.length;ctx.font=`${it?'italic ':''}${bold||hi||ct?'bold ':''}${size}px "${FONT}"`;return {ch,hi,fc,ct,it,width:ctx.measureText(ch).width};});
-  const closing=/^[，。；：！？、）】》”’％,.!?;:)]$/;const opening=/^[（【《“‘(\[]$/;
-  const out=[];let row=[],used=0;
-  for(const g of glyphs){
-    if(g.ch==='\n'){out.push(row);row=[];used=0;continue;}
-    if(row.length&&used+g.width>width-8){
-      let carry=[];
-      // Prefer a nearby phrase boundary over cutting a Chinese term in half.
-      let boundary=-1;
-      for(let i=row.length-1;i>=Math.floor(row.length*0.65);i--){if(/[，；、。！？：\s]/.test(row[i].ch)){boundary=i;break;}}
-      if(boundary>=0&&boundary<row.length-1){carry=row.splice(boundary+1);}
-      else if(closing.test(g.ch)||opening.test(row.at(-1).ch)){carry=[row.pop()];}
-      out.push(row);row=carry;used=carry.reduce((a,x)=>a+x.width,0);
-    }
-    row.push(g);used+=g.width;
-  }
-  out.push(row);
-  return out;
+  return wrapGlyphs(glyphs,width-Math.min(8,width*0.1));
 }
 export function linesOf(str,width,size=34,bold=false,emphasis=[],italicAfter=''){return richLines(str,width,size,bold,emphasis,[],[],italicAfter).map(row=>row.map(x=>x.ch).join(''));}
 export function richTextRows(str,width,{size=34,bold=false,color=C.ink,emphasis=[],focus=[],contrast=[],italicAfter=''}={}){
@@ -43,7 +28,7 @@ export function richTextRows(str,width,{size=34,bold=false,color=C.ink,emphasis=
     return runs.map(({run,hi,fc,ct,it})=>({run,textStyle:{bold:bold||hi||ct,italic:it,color:ct?'#FF0000':hi?C.accent:color,...(fc?{highlight:'#FFFF00'}:{}),typeface:FONT}}));
   });
 }
-export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter='',lineSpacing=1.12}={}){
+export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter='',lineSpacing=1.30}={}){
   const sh=s.shapes.add({geometry:'textbox',name:sourceId||`text-${s.id}-${s.shapes.items.length}`,position:{left:x,top:y,width:w,height:h},fill,line:{fill:stroke,width:stroke==='none'?0:1.2}});
   sh.text.style={typeface:FONT,fontSize:size,bold,color,alignment:align,verticalAlignment:valign,autoFit:'none',wrap:'none',lineSpacing,insets:{top:pad,bottom:pad,left:pad,right:pad}};
   sh.text=richTextRows(str,w-2*pad,{size,bold,color,emphasis,focus,contrast,italicAfter});
