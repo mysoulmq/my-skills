@@ -1,0 +1,10 @@
+{
+  "name": "teacher-question-map",
+  "canvas": {"width": 1280, "height": 720},
+  "fonts": {"material": "KaiTi", "label": "KaiTi", "answer": "Microsoft YaHei"},
+  "colors": {"background": "#FFFFFF", "ink": "#000000", "prompt": "#0070C0", "promptText": "#FFFFFF", "border": "#4874CB", "outerBrace": "#75BD42", "innerBrace": "#4874CB", "arrow": "#4874CB", "application": "#00B0F0", "score": "#00B050", "highlight": "#FFFF00", "contrast": "#FF0000"},
+  "material": {"x": 12, "y": 16, "width": 578, "height": 688, "fontSize": 32, "minFontSize": 28},
+  "right": {"x": 610, "y": 16, "width": 654, "bottom": 698},
+  "type": {"prompt": 22, "label": 28, "body": 24, "minBody": 23},
+  "lineWidth": 2.5
+}

@@ -18,6 +18,12 @@ def check(questions, plan):
     ids = set()
     for q in questions['questions']:
         qid = q['id']
+        if 'totalScore' in q:
+            score=q['totalScore']
+            if isinstance(score,bool) or not isinstance(score,(int,float)) or score<=0 or not q.get('totalScoreSource'):
+                errors.append(f'{qid}: invalid totalScore or missing source')
+            given=re.search(r'[（(]\s*(\d+(?:\.\d+)?)\s*分\s*[）)]',q.get('prompt',''))
+            if given and float(given.group(1))!=score:errors.append(f'{qid}: conflicting total score')
         if qid in ids:
             errors.append(f'Duplicate question: {qid}')
         ids.add(qid)

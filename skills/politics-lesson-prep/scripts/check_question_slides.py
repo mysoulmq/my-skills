@@ -1,6 +1,7 @@
 """Verify required visible question text; notes never count as screen coverage."""
 import argparse
 import json
+import re
 from pathlib import Path
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
@@ -21,6 +22,8 @@ def check(pptx,questions,mapping):
             root=ET.fromstring(files[order[number-1]])
             text=''.join(t.text or '' for t in root.iter(A+'t'))
             grouped.setdefault(page['kind'],[]).append(norm(text))
+            if q.get('totalScore') is not None and not any(float(v)==q['totalScore'] for v in re.findall(r'[（(]\s*(\d+(?:\.\d+)?)\s*分\s*[）)]',text)):
+                errors.append(f'{q["id"]}: page {number} missing question total score')
             if page['kind']=='material':
                 for shape in root.findall('.//{http://schemas.openxmlformats.org/presentationml/2006/main}sp'):
                     props=shape.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')

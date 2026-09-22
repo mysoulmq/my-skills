@@ -44,6 +44,16 @@ class CoreTests(unittest.TestCase):
         result=checks.check(q,{'periods':[]})
         self.assertFalse(result['pass']);self.assertTrue(any('quote' in e for e in result['errors']))
 
+    def test_known_question_score_requires_source_and_matches_prompt(self):
+        q={'questions':[{'id':'q','prompt':'说明理由。（6分）','totalScore':8,
+             'material':'资料','analysis':[],'answer':[]}]}
+        result=checks.check(q,{'periods':[]})
+        self.assertTrue(any('missing source' in e for e in result['errors']))
+        self.assertTrue(any('conflicting total score' in e for e in result['errors']))
+        q['questions'][0].update(totalScore=6,totalScoreSource='supplied reference')
+        result=checks.check(q,{'periods':[]})
+        self.assertFalse(any('totalScore' in e or 'total score' in e for e in result['errors']))
+
     def test_resource_and_notes_relationship_graph(self):
         with tempfile.TemporaryDirectory() as d:
             f=Path(d)/'in.pptx';out=Path(d)/'out.pptx'

@@ -17,3 +17,7 @@
 `notesByPage`：教学计划中的对象，键为稳定页面ID（如`knowledge-1`或`q1-analysis-1`），值为1—3条短句数组。每条≤35字、合计≤90字；通常2—3条，按本页而非整个活动提炼，保留关键限定，不用程序截断。材料续页、分析页、答案页各有自己的提示。原题、参考答案和长讲解不进入备注。活动`cue`供Word速览使用，不整组复制到PPT。页面规划后一次补齐此字段；缺页时停止导出，不回退到长讲稿。
 
 教学计划 `spec` 当前默认 `senior-review`，按复习课组织、计时与复核。完整sequence首项必须为整课大纲脑图 `knowledgePage:1`，后续页按知识依赖组织，不固定第二页为题目；只有符合复习课spec中诊断条件时才加入diagnosis阶段；变更次序时同步活动顺序和关联字段。
+
+题目视觉字段：totalScore（正数）＋totalScoreSource（明确来源）用于补充原设问缺失的已知总分，原prompt及原文保留；不同来源分值冲突拒绝静默覆盖。不要仅因word漏分而忽略同题截图的分值。答案score表示已有依据的分支得分，scoreLabel保留评分对象；无依据不添加，totalScore不自动分摊。
+
+原生脑图标注：题目taskFocus/materialFocus，分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。Focus是当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，不能只写序号，不增加答案点。完整原理与应用仍用原字段保留。
