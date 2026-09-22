@@ -19,6 +19,10 @@ function scorePrompt(q){
  if(q.totalScore!==undefined){
   if(!Number.isFinite(q.totalScore)||q.totalScore<=0||!q.totalScoreSource)throw Error(`${q.id}: totalScore needs positive number and source`);
   if(match&&Number(match[1])!==q.totalScore)throw Error(`${q.id}: conflicting question total scores`);
+  if(q.scoreStatus==='predicted'){
+   if(match||!q.scorePrediction?.basis||!q.scorePrediction?.note)throw Error(`${q.id}: invalid predicted score or conflict with source score`);
+   return q.prompt+`（${q.totalScore}分，预测）`;
+  }
   if(!match)return q.prompt+`（${q.totalScore}分）`;
  }
  return q.prompt;
@@ -85,7 +89,7 @@ for(const q of data.questions){
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }
  // Complete answer points remain complete, each with native branches and original sample typography.
- const scoreText=a=>a.score===undefined?'':`（${a.scoreLabel||'本点'}${a.score}分）`;
+ const scoreText=a=>a.score===undefined?'':`（${q.scoreStatus==='predicted'?'拟分：':''}${a.scoreLabel||'本点'}${a.score}分）`;
  const aw=490;
  const bh=a=>Math.max(h(a.branchLabel||'原理与应用',102,22,{bold:true}),h(a.principle,aw,24,{bold:true})+h(a.application,aw,24)+ (a.score===undefined?0:h(scoreText(a),aw,24,{font:F.label,bold:true})))+32;
  for(const [part,items] of paginate(q.answer,696-top,bh).entries()){

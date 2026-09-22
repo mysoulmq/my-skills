@@ -1,5 +1,6 @@
 import importlib.util
 import tempfile
+import sys
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
@@ -8,6 +9,7 @@ from xml.etree import ElementTree as ET
 ROOT=Path(__file__).resolve().parents[2]/'skills/politics-lesson-prep/scripts'
 def module(name):
     spec=importlib.util.spec_from_file_location(name,ROOT/(name+'.py'));m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
+sys.path.insert(0,str(ROOT))
 extract=module('extract_docx');views=module('pptx_views');checks=module('check_teaching')
 
 
@@ -53,6 +55,19 @@ class CoreTests(unittest.TestCase):
         q['questions'][0].update(totalScore=6,totalScoreSource='supplied reference')
         result=checks.check(q,{'periods':[]})
         self.assertFalse(any('totalScore' in e or 'total score' in e for e in result['errors']))
+
+    def test_score_prediction_totals_and_overlap(self):
+        scoring=module('score_prediction')
+        q={'id':'q','scoreStatus':'predicted','prompt':'说明原因。','totalScore':6,'answer':[{},{}],
+           'scorePrediction':{'basis':'两个独立论证单元','referencePattern':'two explanations',
+           'confidence':'medium','note':'预测6分：两组原理与材料，各3分。',
+           'units':[{'label':'作用一','reason':'原理及材料解释','score':3,'answerIndices':[0]},
+                    {'label':'作用二','reason':'另一独立原理及材料解释','score':3,'answerIndices':[1]}]}}
+        self.assertEqual(scoring.validate(q),[])
+        q['scorePrediction']['units'][1]['answerIndices']=[0]
+        self.assertTrue(any('repeated' in e for e in scoring.validate(q)))
+        q['scorePrediction']['units'][1]['answerIndices']=[1];q['totalScore']=8
+        self.assertTrue(any('sum' in e for e in scoring.validate(q)))
 
     def test_resource_and_notes_relationship_graph(self):
         with tempfile.TemporaryDirectory() as d:

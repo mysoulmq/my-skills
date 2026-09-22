@@ -22,13 +22,15 @@ def check(pptx,questions,mapping):
             root=ET.fromstring(files[order[number-1]])
             text=''.join(t.text or '' for t in root.iter(A+'t'))
             grouped.setdefault(page['kind'],[]).append(norm(text))
-            if q.get('totalScore') is not None and not any(float(v)==q['totalScore'] for v in re.findall(r'[（(]\s*(\d+(?:\.\d+)?)\s*分\s*[）)]',text)):
+            if q.get('totalScore') is not None and not any(float(v)==q['totalScore'] for v in re.findall(r'[（(]\s*(\d+(?:\.\d+)?)\s*分(?:[，,]\s*预测)?\s*[）)]',text)):
                 errors.append(f'{q["id"]}: page {number} missing question total score')
             if page['kind']=='material':
                 for shape in root.findall('.//{http://schemas.openxmlformats.org/presentationml/2006/main}sp'):
                     props=shape.find('.//{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr')
                     if props is not None and props.get('name','').startswith(q['id']+'-material-') and not props.get('name','').endswith('-title'):
                         material_parts.append(norm(''.join(t.text or '' for t in shape.iter(A+'t'))))
+        if q.get('scoreStatus')=='predicted' and any('预测' not in t for texts in grouped.values() for t in texts):
+            errors.append(f'{q["id"]}: predicted total lacks visible prediction label')
         all_text=''.join(t for texts in grouped.values() for t in texts)
         for field in ('material','prompt'):
             pool=''.join(material_parts) if field=='material' and material_parts else all_text

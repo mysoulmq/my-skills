@@ -10,6 +10,10 @@ A='http://schemas.openxmlformats.org/drawingml/2006/main'
 
 def cue_text(plan, page_id):
     lines=plan.get('notesByPage',{}).get(page_id)
+    if isinstance(lines,list):
+        lines=list(lines)
+        score_note=plan.get('scoreNotesByPage',{}).get(page_id)
+        if score_note and score_note not in lines:lines.append(score_note)
     if not isinstance(lines,list) or not 1<=len(lines)<=3:
         raise ValueError(f'{page_id}: supply 1–3 page-specific notesByPage cues')
     if any(not isinstance(s,str) or not s.strip() or len(s)>35 or '\n' in s for s in lines):

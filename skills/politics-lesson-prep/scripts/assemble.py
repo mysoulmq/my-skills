@@ -10,6 +10,7 @@ from pptx_views import compose, ordered_slides
 from check_teaching import check
 from write_plan import write
 from compact_notes import rewrite
+from score_prediction import attach_notes
 
 
 def manifests(knowledge_pptx, question_pptx, question_pages, sequence, plan):
@@ -60,6 +61,7 @@ if __name__=='__main__':
     mappings={}
     for name,manifest in manifests(a.knowledge_pptx,a.question_pptx,load(a.question_pages),load(a.sequence),plan).items():
         mappings[name]=compose(manifest,out/(name+'.pptx'))
+        attach_notes(plan,load(a.questions),mappings[name])
         rewrite(out/(name+'.pptx'),mappings[name],plan,out/(name+'.pptx'))
     # Keep build metadata private; finalization copies only the four artifacts.
     (out/'page-mapping.json').write_text(json.dumps(mappings,ensure_ascii=False,indent=2))

@@ -3,6 +3,7 @@ import argparse
 import json
 import re
 from pathlib import Path
+from score_prediction import validate as validate_prediction
 
 TEACHING = ('ask', 'expected', 'misconception', 'followup', 'explanation', 'check', 'transition')
 
@@ -18,6 +19,7 @@ def check(questions, plan):
     ids = set()
     for q in questions['questions']:
         qid = q['id']
+        errors.extend(validate_prediction(q))
         if 'totalScore' in q:
             score=q['totalScore']
             if isinstance(score,bool) or not isinstance(score,(int,float)) or score<=0 or not q.get('totalScoreSource'):

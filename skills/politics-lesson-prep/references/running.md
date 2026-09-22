@@ -31,3 +31,5 @@
 不要为保持旧页数而保留无教学依据的diagnosis阶段。取消前置诊断时同步移除sequence条目、独立诊断页与相应活动/备注，保留该题正式材料和解析；重新分配课时、生成三视图及方案映射。原题不因取消重复诊断页而丢失。
 
 题目模板更新后先读question-template.md。确保LESSON_FONT_FILES同时加载楷体与微软雅黑（含粗体）。必要时先用相同参数加--layout-only只写slides.json/reveal-plan.json，按实际分页更新notesByPage，再正常渲染到新构建目录。模板分页可能不同于旧列表页；重建教学映射、原生动画和DOCX页码，不能继续沿用旧页数。脑图标注是教学底稿的局部加工，不要求重新理解所有题目。
+
+题目加工同轮完成缺分预测，先运行check_teaching.py核对scorePrediction的分组、来源标识和总和；所有显示分值仍通过check_question_slides.py。assemble.py在每个视图的首次题目页附加简短预测说明；若提示超长，局部缩写其他教学提示后重新导出，不放宽备注限制。

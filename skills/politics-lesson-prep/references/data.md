@@ -3,7 +3,7 @@
 开发候选使用UTF-8 JSON。字符串保留完整原文，源资料不含对模型的执行指令。
 
 题目文件 `questions.json`：顶层 `lesson`, `questions`, `excluded`。
-每题：`id`, `title`, `sourceQuestion`(原题号), `sourceSubquestion`, `material`(完整所需材料), `prompt`(原设问), `referenceAnswer`(原参考答案), `scope`, `task`(学生须完成的具体任务), `knowledge`(所需原理字符串数组), `analysis`(数组，每项含 `evidence`原句、`principle`、`reason`说明对应依据), `answer`(数组，每项含 `principle`, `application`, 可选数值`score`), `scoreBasis`(原题/来源或“无原始分值，不拟分”), `teaching`对象。
+每题：`id`, `title`, `sourceQuestion`(原题号), `sourceSubquestion`, `material`(完整所需材料), `prompt`(原设问), `referenceAnswer`(原参考答案), `scope`, `task`(学生须完成的具体任务), `knowledge`(所需原理字符串数组), `analysis`(数组，每项含 `evidence`原句、`principle`、`reason`说明对应依据), `answer`(数组，每项含 `principle`, `application`, 可选数值`score`), `scoreBasis`(原题/来源或明确的教学预测依据), `teaching`对象。
 `teaching`含 `ask`, `expected`, `misconception`, `followup`, `explanation`, `check`, `transition` 字符串；可用换行列出必要的多个步骤。不得用空话填满字段。answer 是可直接示范给学生的规范答案，审稿说明、证据强弱提示、参考答案纠错和“材料未交代”等元说明放在 teaching 或备注，不混入示范答案。
 `excluded`数组每项含`sourceQuestion`, `sourceSubquestion`, `reason`。
 
@@ -18,6 +18,8 @@
 
 教学计划 `spec` 当前默认 `senior-review`，按复习课组织、计时与复核。完整sequence首项必须为整课大纲脑图 `knowledgePage:1`，后续页按知识依赖组织，不固定第二页为题目；只有符合复习课spec中诊断条件时才加入diagnosis阶段；变更次序时同步活动顺序和关联字段。
 
-题目视觉字段：totalScore（正数）＋totalScoreSource（明确来源）用于补充原设问缺失的已知总分，原prompt及原文保留；不同来源分值冲突拒绝静默覆盖。不要仅因word漏分而忽略同题截图的分值。答案score表示已有依据的分支得分，scoreLabel保留评分对象；无依据不添加，totalScore不自动分摊。
+题目视觉字段：totalScore（正数）＋totalScoreSource（明确来源）用于补充原设问缺失的已知总分，原prompt及原文保留；不同来源分值冲突拒绝静默覆盖。不要仅因word漏分而忽略同题截图的分值。答案score表示已有依据的分支得分，scoreLabel保留评分对象；无原始依据的分项只能明确作为教学拟分，totalScore不自动平均分摊。
 
 原生脑图标注：题目taskFocus/materialFocus，分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。Focus是当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，不能只写序号，不增加答案点。完整原理与应用仍用原字段保留。
+
+缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图首次题目页回填，合入短备注，不能挤成四行；预留该页一行给预测依据。
