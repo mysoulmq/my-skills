@@ -1,3 +1,4 @@
+import {role,gap,writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
@@ -90,8 +91,8 @@ for(const q of data.questions){
  }
  // Complete answer points remain complete, each with native branches and original sample typography.
  const scoreText=a=>a.score===undefined?'':`（${(a.scoreLabel||'本点').replace(/(?:预测|拟分)[：:]?/g,'')}${a.score}分）`;
- const aw=490,answerStyle={lineSpacing:1.30},innerGap=16,scoreGap=10,branchGap=40;
- const answerH=(text,extra={})=>h(text,aw,24,{...answerStyle,...extra});
+ const aw=490,answerSize=role('question.theory.2.1').size,answerStyle={lineSpacing:role('question.theory.2.1').lineSpacing},innerGap=gap('question.theory.2.1','question.application.2.1'),scoreGap=10,branchGap=Math.min(gap('question.application.2.1','question.theory.2.2'),gap('question.application.3.1','question.theory.3.2'));
+ const answerH=(text,extra={})=>h(text,aw,answerSize,{...answerStyle,...extra});
  const labelText=a=>a.branchLabelDisplay||a.branchLabel||'原理与应用';
  const labelH=a=>h(labelText(a),102,22,{bold:true,lineSpacing:1.25});
  const contentH=a=>Math.max(labelH(a),answerH(a.principle,{bold:true})+innerGap+answerH(a.application)+(a.score===undefined?0:scoreGap+answerH(scoreText(a),{font:F.label,bold:true})));
@@ -99,14 +100,14 @@ for(const q of data.questions){
  for(const [part,items] of paginate(q.answer,696-top,bh).entries()){
   for(const a of items)if(a.branchLabelDisplay&&a.branchLabelDisplay.replace(/\s/g,'')!==(a.branchLabel||'').replace(/\s/g,''))throw Error('branchLabelDisplay may only add semantic line breaks');
   const spare=Math.max(0,696-top-items.reduce((n,a)=>n+bh(a),0));
-  const extra=items.length>1?Math.min(64,spare/(items.length-1)):0;
+  const extra=items.length>1?Math.min(Math.max(0,gap('question.application.2.1','question.theory.2.2')-branchGap),spare/(items.length-1)):0;
   const {s}=add(q,'answer',part+1,material,size);let y=top+Math.min(24,Math.max(0,(spare-extra*(items.length-1))/2));const steps=[];
   for(const [i,a] of items.entries()){
    const name=`${q.id}-answer-${part+1}-${i+1}`,hh=contentH(a);
    put(s,labelText(a),616,y+Math.max(0,(hh-labelH(a))/2),102,{size:22,bold:true,lineSpacing:1.25,name:name+'-root'});
    const bs=brace(s,720,y,hh,name+'-brace',C.outerBrace);
-   const ph=put(s,a.principle,750,y,aw,{...answerStyle,bold:true,focus:a.principleFocus||[],name:name+'-principle'});
-   put(s,a.application,750,y+ph+innerGap,aw,{...answerStyle,color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
+   const ph=put(s,a.principle,750,y,aw,{...answerStyle,size:answerSize,bold:true,focus:a.principleFocus||[],name:name+'-principle'});
+   put(s,a.application,750,y+ph+innerGap,aw,{...answerStyle,size:answerSize,color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
    const group=[name+'-root',...bs,name+'-principle',name+'-application'];
    if(a.score!==undefined){if(!q.scoreBasis||q.scoreBasis.includes('无原始分值'))throw Error(`${q.id}: answer score without basis`);
     put(s,scoreText(a),750,y+ph+innerGap+answerH(a.application)+scoreGap,aw,{...answerStyle,font:F.label,bold:true,color:C.score,name:name+'-score'});group.push(name+'-score');}
@@ -119,6 +120,8 @@ await fs.writeFile(path.join(output,'slides.json'),JSON.stringify(slides,null,2)
 await fs.writeFile(path.join(output,'reveal-plan.json'),JSON.stringify(reveal,null,2));
 if(!layoutOnly){
  await (await PresentationFile.exportPptx(p)).save(path.join(output,'candidate.pptx'));
+ writeSpacing(path.join(output,'candidate.pptx'));
+ await fs.writeFile(path.join(output,'template-source.json'),JSON.stringify({sha256:template.sha256}));
  for(const [i,s] of p.slides.items.entries()){
   const im=await p.export({slide:s,format:'png',scale:1});await fs.writeFile(path.join(output,'previews',`${String(i+1).padStart(2,'0')}.png`),new Uint8Array(await im.arrayBuffer()));
  }

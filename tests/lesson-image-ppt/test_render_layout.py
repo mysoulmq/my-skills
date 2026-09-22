@@ -74,6 +74,10 @@ class RenderLayoutTests(unittest.TestCase):
             self.assertEqual(report['leafWidth'], 554)
             self.assertEqual(report['leafX'], 696)
             with ZipFile(out/'candidate.pptx') as z:
+                native_spacings = [int(e.get('val')) for n in z.namelist()
+                                   if re.fullmatch(r'ppt/slides/slide\d+\.xml', n)
+                                   for e in ET.fromstring(z.read(n)).findall('.//a:lnSpc/a:spcPct', NS)]
+                self.assertIn(130000, native_spacings, 'Measured body spacing must reach native PPTX')
                 first = ET.fromstring(z.read('ppt/slides/slide1.xml'))
                 names = [e.get('name', '') for e in first.findall('.//p:cNvPr', NS)]
                 self.assertEqual(sum(n.startswith('map-leaf-') for n in names), 13)
@@ -105,6 +109,10 @@ class RenderLayoutTests(unittest.TestCase):
             report = json.loads((out/'layout-review.json').read_text())[0]
             self.assertEqual(report['headingSize'], 22)
             with ZipFile(out/'candidate.pptx') as z:
+                native_spacings = [int(e.get('val')) for n in z.namelist()
+                                   if re.fullmatch(r'ppt/slides/slide\d+\.xml', n)
+                                   for e in ET.fromstring(z.read(n)).findall('.//a:lnSpc/a:spcPct', NS)]
+                self.assertIn(130000, native_spacings, 'Measured body spacing must reach native PPTX')
                 first = ET.fromstring(z.read('ppt/slides/slide1.xml'))
                 for shape in first.findall('.//p:sp', NS):
                     name = shape.find('p:nvSpPr/p:cNvPr', NS).get('name', '')

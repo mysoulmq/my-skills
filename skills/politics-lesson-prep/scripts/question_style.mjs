@@ -1,3 +1,4 @@
+import {role,recordSpacing} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 import {wrapGlyphs} from '../../lesson-image-ppt/scripts/line_breaks.mjs';
 // Native editable question-template primitives; font-aware measurement per role.
 import fs from 'node:fs';
@@ -7,6 +8,18 @@ const require=createRequire(path.join(process.env.LESSON_NODE_MODULES,'__questio
 const {GlobalFonts,createCanvas}=require('@napi-rs/canvas');
 for(const file of JSON.parse(process.env.LESSON_FONT_FILES||'[]'))GlobalFonts.registerFromPath(file);
 export const theme=JSON.parse(fs.readFileSync(new URL('../assets/question-theme.json',import.meta.url),'utf8'));
+theme.fonts.material=role('question.material.2').font;
+theme.fonts.answer=role('question.theory.2.1').font;
+theme.fonts.label=role('question.score.2').font;
+theme.colors.ink=role('question.theory.2.1').color;
+theme.colors.application=role('question.application.2.1').color;
+theme.colors.prompt=role('question.prompt.2').fill;
+theme.colors.promptText=role('question.prompt.2').color;
+theme.colors.score=role('question.score.2').color;
+theme.colors.outerBrace=role('question.brace.2.1').lineColor;
+theme.colors.border=role('question.border.2').lineColor;
+theme.type.prompt=role('question.prompt.2').size;
+theme.material.fontSize=role('question.material.2').size;
 for(const family of new Set(Object.values(theme.fonts)))if(!GlobalFonts.families.some(f=>f.family===family))throw Error(`Missing required question font: ${family}; load its licensed font file before rendering`);
 const ctx=createCanvas(2,2).getContext('2d');
 export function rows(str,w,{size=24,font=theme.fonts.answer,bold=false,color=theme.colors.ink,focus=[],contrast=[],emphasis=[]}={}){
@@ -29,6 +42,7 @@ export function put(s,str,x,y,w,opts={}){
   if(y+h>706)throw Error(`Question text overflow ${opts.name}: bottom ${y+h}`);
   const sh=s.shapes.add({geometry:'textbox',name:opts.name,position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
   sh.text.style={fontSize:size,typeface:opts.font||theme.fonts.answer,color:opts.color||theme.colors.ink,bold:opts.bold||false,wrap:'none',autoFit:'none',lineSpacing:spacing(opts),insets:{top:0,bottom:0,left:0,right:0}};
+  recordSpacing(s._lessonNumber,opts.name,spacing(opts));
   sh.text=rows(str,w,opts);return h;
 }
 export function shape(s,geometry,x,y,w,h,{name,color=theme.colors.innerBrace,fill='none',width=theme.lineWidth}={}){

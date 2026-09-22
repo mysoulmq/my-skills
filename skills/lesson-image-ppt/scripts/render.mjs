@@ -1,3 +1,4 @@
+import {role,writeSpacing,template} from './template_contract.mjs';
 import {fitSpacing} from './spacing_profile.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -35,7 +36,7 @@ function resolve(o){
  return o;
 }
 function put(s,input,x,y,w,h,opts={}){const o=resolve(input);if(o.ref)usage.push({id:o.ref,slide:s._lessonNumber});return text(s,o.text,x,y,w,h,{...opts,...o,sourceId:o.ref||''});}
-function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??1.30)+6);}
+function measure(o,w,size=32){return Math.ceil(richTextRows(o.text,w,{...o,size}).length*size*(o.lineSpacing??role('lesson.body.2.1').lineSpacing)+6);}
 function height(o,w,size=32){return measure(resolve(o),w,size);}
 function blockHeight(b){
  if(b.type==='paragraphs')return b.items.reduce((sum,input)=>{const o=resolve(input),size=o.size||b.size||32,inset=o.bullet?64:(o.indent||0);return sum+height(o,(b.w??1168)-inset,size)+(o.gap??b.gap??24);},0);
@@ -216,6 +217,8 @@ for(let i=0;i<deck.slides.length;i++){
 }
 const covered=new Set(usage.map(u=>u.id));const missing=source.units.filter(u=>!covered.has(u.id));if(missing.length)throw Error(`Unplaced source units: ${missing.map(u=>u.id).join(',')}`);
 await (await PresentationFile.exportPptx(p)).save(path.join(out,'candidate.pptx'));
+writeSpacing(path.join(out,'candidate.pptx'));
+await fs.writeFile(path.join(out,'template-source.json'),JSON.stringify({sha256:template.sha256}));
 await fs.mkdir(path.join(out,'previews'),{recursive:true});
 for(let i=0;i<p.slides.items.length;i++){const s=p.slides.items[i],id=String(i+1).padStart(2,'0');const im=await p.export({slide:s,format:'png',scale:1});await fs.writeFile(path.join(out,`previews/${id}.png`),new Uint8Array(await im.arrayBuffer()));}
 await fs.writeFile(path.join(out,'layout-review.json'),JSON.stringify(layoutReview,null,2));

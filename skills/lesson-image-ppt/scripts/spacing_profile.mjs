@@ -1,3 +1,4 @@
+import {gap} from './template_contract.mjs';
 // Measured spacing presets: no content, font, ordering, or page-count decisions.
 export function fitSpacing(blocks, available, measure, profile='comfortable') {
   if(!['comfortable','preserve'].includes(profile))throw Error(`Unknown spacingProfile: ${profile}`);
@@ -8,12 +9,12 @@ export function fitSpacing(blocks, available, measure, profile='comfortable') {
   };
   for(const b of target){
     if(b.type==='paragraphs'){
-      const n=b.items.length,preferred=n===2?44:n===3?36:n===4?28:24;
+      const n=b.items.length,preferred=n>=2&&n<=4?gap(`lesson.body.${n}.1`,`lesson.body.${n}.2`):24;
       b.items=b.items.map(v=>typeof v==='string'?{ref:v}:v);
       b.items.forEach((v,i)=>grow(v,'gap',v.gap??b.gap??24,i<n-1?preferred:24));
       if(n<=3)grow(b,'before',b.before??0,12);
     }else if(b.type==='branches'){
-      grow(b,'gap',b.gap??32,48);grow(b,'before',b.before??0,10);
+      grow(b,'gap',b.gap??32,gap('lesson.branch.1','lesson.branch.2'));grow(b,'before',b.before??0,10);
     }else if(b.type==='table')grow(b,'before',b.before??0,10);
   }
   const used=list=>list.reduce((n,b)=>n+(b.before??0)+measure(b)+(b.after??0),0);

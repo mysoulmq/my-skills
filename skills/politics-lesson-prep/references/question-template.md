@@ -1,6 +1,6 @@
 # 题目与答案的个人模板
 
-题目部分使用 assets/question-theme.json 和 scripts/question_style.mjs；render_questions.mjs 实际调用这些样式。assets/question-template.pptx 是脱敏的原生可编辑双页示例，可在WPS直接改字作为模板使用；示例分值均明确为拟分，不是真实试题标准。不要把照片或参考PPT的题目内容复制进公开资源。
+题目部分使用 assets/question-theme.json 和 scripts/question_style.mjs；render_questions.mjs 实际调用这些样式。依赖 lesson-image-ppt 的 assets/teaching-template.pptx 是实际运行时读取的原生可编辑模板；受支持样式和WPS修改范围见依赖的 references/editable-template.md。旧 question-template.pptx 已移除，避免继续使用未同步的二页示例。不要把照片或参考PPT的题目内容复制进公开资源。
 
 依据原始样本PPT的OOXML：16:9；题干楷体约24pt（32px）；设问微软雅黑加粗约16pt（21—22px），蓝底#0070C0、白字；答案理论微软雅黑黑色加粗，材料应用微软雅黑青蓝#00B0F0，其中关键对应词局部加粗；评分提示楷体加粗绿色#00B050。不能将所有文字统一成一种字体，也不能仅改文字颜色便称为符合样本。
 

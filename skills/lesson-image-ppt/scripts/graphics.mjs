@@ -1,3 +1,4 @@
+import {role,recordSpacing} from './template_contract.mjs';
 import {wrapGlyphs} from './line_breaks.mjs';
 import {createRequire} from 'node:module';
 import path from 'node:path';
@@ -7,8 +8,8 @@ const {GlobalFonts,createCanvas}=require('@napi-rs/canvas');
 const fontPaths=JSON.parse(process.env.LESSON_FONT_FILES||'[]');
 if(!fontPaths.length)throw Error('Set LESSON_FONT_FILES to local licensed font paths');
 for(const f of fontPaths){if(!fs.existsSync(f))throw Error(`Missing font: ${f}`);GlobalFonts.registerFromPath(f);}
-export const FONT=process.env.LESSON_FONT_FAMILY||'Microsoft YaHei';
-export const C={bg:'#FCFDFE',ink:'#202E3A',navy:'#173E52',accent:'#176B80',muted:'#627B89',line:'#91B4C2',light:'#EAF3F7',warm:'#A15C23'};
+export const FONT=process.env.LESSON_FONT_FAMILY||role('lesson.body.2.1').font;
+export const C={bg:'#FCFDFE',ink:role('lesson.body.2.1').color,navy:role('lesson.title.2').color,accent:role('lesson.subtitle.2').color,muted:'#627B89',line:'#91B4C2',light:'#EAF3F7',warm:'#A15C23'};
 export const recorded=[];
 const ctx=createCanvas(10,10).getContext('2d');
 function richLines(str,width,size=34,bold=false,emphasis=[],focus=[],contrast=[],italicAfter=''){
@@ -28,9 +29,10 @@ export function richTextRows(str,width,{size=34,bold=false,color=C.ink,emphasis=
     return runs.map(({run,hi,fc,ct,it})=>({run,textStyle:{bold:bold||hi||ct,italic:it,color:ct?'#FF0000':hi?C.accent:color,...(fc?{highlight:'#FFFF00'}:{}),typeface:FONT}}));
   });
 }
-export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter='',lineSpacing=1.30}={}){
+export function text(s,str,x,y,w,h,{size=34,bold=false,color=C.ink,align='left',valign='top',fill='none',stroke='none',pad=0,sourceId='',emphasis=[],focus=[],contrast=[],italicAfter='',lineSpacing=role('lesson.body.2.1').lineSpacing}={}){
   const sh=s.shapes.add({geometry:'textbox',name:sourceId||`text-${s.id}-${s.shapes.items.length}`,position:{left:x,top:y,width:w,height:h},fill,line:{fill:stroke,width:stroke==='none'?0:1.2}});
   sh.text.style={typeface:FONT,fontSize:size,bold,color,alignment:align,verticalAlignment:valign,autoFit:'none',wrap:'none',lineSpacing,insets:{top:pad,bottom:pad,left:pad,right:pad}};
+  recordSpacing(s._lessonNumber,sourceId||`text-${s.id}-${s.shapes.items.length-1}`,lineSpacing);
   sh.text=richTextRows(str,w-2*pad,{size,bold,color,emphasis,focus,contrast,italicAfter});
   if(sourceId) recorded.push({slide:s._lessonNumber,id:sourceId,text:String(str)});
   return sh;
