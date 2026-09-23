@@ -32,7 +32,9 @@ def read(path):
                         return default
                     d.update(font=val(A+'latin','typeface'),size=int(attr('sz','2400'))/75,bold=attr('b','0')=='1',color=val(A+'solidFill/'+A+'srgbClr','val'))
                     if d['color']:d['color']='#'+d['color']
-                    ls=sp.find('.//'+A+'lnSpc/'+A+'spcPct');d['lineSpacing']=int(ls.get('val'))/100000 if ls is not None else 1
+                    ls=sp.find('.//'+A+'lnSpc/'+A+'spcPct')
+                    pts=sp.find('.//'+A+'lnSpc/'+A+'spcPts')
+                    d['lineSpacing']=int(ls.get('val'))/100000 if ls is not None else int(pts.get('val'))/(d['size']*75) if pts is not None else 1
                 for field,xpath in [('fill',P+'spPr/'+A+'solidFill/'+A+'srgbClr'),('lineColor',P+'spPr/'+A+'ln/'+A+'solidFill/'+A+'srgbClr')]:
                     el=sp.find(xpath)
                     if el is not None:d[field]='#'+el.get('val')
@@ -50,7 +52,12 @@ def patch(path,ratios):
                 pp=par.find(A+'pPr')
                 if pp is None:pp=E.Element(A+'pPr');par.insert(0,pp)
                 for old in pp.findall(A+'lnSpc'):pp.remove(old)
-                ls=E.Element(A+'lnSpc');E.SubElement(ls,A+'spcPct',val=str(round(ratio*100000)));pp.insert(0,ls)
+                # OOXML percent is based on the office font's natural line box,
+                # not fontSize. Use explicit points to match Canvas height math.
+                sizes=[int(e.get('sz')) for e in par.iter() if e.get('sz')]
+                if not sizes:raise ValueError(f'{page}:{key}: missing explicit paragraph font size')
+                if not isinstance(ratio,(float,int)) or ratio<1:raise ValueError('Invalid line spacing ratio')
+                ls=E.Element(A+'lnSpc');E.SubElement(ls,A+'spcPts',val=str(round(max(sizes)*ratio)));pp.insert(0,ls)
         files[name]=E.tostring(root,encoding='utf-8',xml_declaration=True)
     tmp=Path(str(path)+'.tmp')
     with ZipFile(tmp,'w',ZIP_DEFLATED) as z:
