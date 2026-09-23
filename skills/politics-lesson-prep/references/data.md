@@ -8,7 +8,7 @@
 `excluded`数组每项含`sourceQuestion`, `sourceSubquestion`, `reason`。
 
 教学计划 `teaching-plan.json`：`lesson`, `designRationale`（教学主线与关键安排理由）, `preparation`数组（教师课前需掌握的具体判断）, `goals`数组, `difficulties`数组, `periods`数组。
-每课时含 `title`, `quickCard`（`mainline`主线、`mustExplain`区别数组、`questions`问题数组、`timeChoice`取舍）, `activities` 数组；活动含 `id`, `title`, `minutes`, `kind`(`diagnosis`/`knowledge`/`question`/`recap`), `knowledgeTopics`(原稿小点标题数组), `questionIds`数组，以及上述`teaching`对象和`optional`布尔值。活动另含短句`cue`：`ask`, `explain`, `pitfall`, `followup`, `check`, `transition`，每项约35—50汉字，供课堂速查，不用泛泛指令代替具体辨析。每课时总计40分钟；不把内容全塞进单课时。
+每课时含 `title`, `quickCard`（`mainline`主线、`mustExplain`区别数组、`questions`问题数组、`timeChoice`取舍）, `activities` 数组；活动含 `id`, `title`, `minutes`, `kind`(`diagnosis`/`knowledge`/`question`/`recap`), `knowledgeTopics`(原稿小点标题数组), `questionIds`数组，以及上述`teaching`对象和`optional`布尔值。活动另含短句`cue`：`ask`, `explain`, `pitfall`, `followup`, `check`, `transition`，每项约35—50汉字，供课堂速查，不用泛泛指令代替具体辨析。每课时建议必讲活动总计40分钟；可选活动说明替换项目及用时，不全量累加。`optional`只表示教学取舍，不能据此设置幻灯片隐藏或添加投影标签；默认页面可见，选讲理由和接续页写入teaching、cue及相关页面备注。不把内容全塞进单课时。
 
 讲义能力维持其已有 `source.json`、`deck.json` 和 `reveal-plan.json` 接口，不引入第二套知识结构。完整试跑获取本轮新的图片识读结果后，根据稳定知识ID补入实际页面映射；小规模教学试验可用已核对的知识文本，但不能称作完整图片端到端试跑。
 
