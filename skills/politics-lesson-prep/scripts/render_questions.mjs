@@ -11,7 +11,7 @@ const data=JSON.parse(await fs.readFile(input,'utf8'));
 const sequence=sequenceFile?JSON.parse(await fs.readFile(sequenceFile,'utf8')):[];
 const plan=planFile?JSON.parse(await fs.readFile(planFile,'utf8')):{};
 const diagnoses=new Set(sequence.filter(e=>e.stage==='diagnosis').map(e=>e.questionId));
-const p=Presentation.create({slideSize:T.canvas}),slides=[],reveal={slides:[]};
+const p=Presentation.create({slideSize:T.canvas}),slides=[],reveal={slides:[]},layoutDecisions=[];
 const C=T.colors,F=T.fonts;
 const h=(str,w,size=T.type.body,extra={})=>height(str,w,{size,...extra});
 await fs.mkdir(path.join(output,'previews'),{recursive:true});
@@ -51,6 +51,8 @@ function paginate(items,limit,heightFn){
  }if(current.length)pages.push(current);return pages;
 }
 for(const q of data.questions){
+ const firstSlide=slides.length;
+ if(q.layout?.analysisPages&&!q.layout?.reason)throw Error(`${q.id}: separate analysis pages require a concrete teaching reason`);
  let material=q.material,size=T.material.fontSize;
  while(size>T.material.minFontSize&&h(material,554,size,{font:F.material})>665)size--;
  if(h(material,554,size,{font:F.material})>665){
@@ -65,7 +67,10 @@ for(const q of data.questions){
   put(s,'审题——\n确定答题格式',644,top,220,{font:F.label,size:28,name:`${q.id}-diagnosis-label`});
   put(s,q.task,894,top,350,{bold:true,name:`${q.id}-diagnosis-task`});
  }
- // Analysis is a bracketed teaching map, not a list of evidence/principle strings.
+ // Default: material + prompt + answer map on the same slide.
+ // Analysis is taught through reveal steps and page-local cues, not duplicated pages.
+ if(q.layout?.analysisPages===true){
+ // Explicitly justified expanded analysis remains available for exceptional lessons.
  const taskH=Math.max(h('审题——\n确定答题格式',160,24,{font:F.label}),h(q.task,426,24,{bold:true}));
  const start=top+taskH+30;
  const ah=a=>h(a.principle,426,24,{bold:true})+Math.max(h(a.evidence,245,24),h(a.reason,295,24))+54;
@@ -89,6 +94,7 @@ for(const q of data.questions){
   }
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }
+ }
  // Complete answer points remain complete, each with native branches and original sample typography.
  const scoreText=a=>a.score===undefined?'':`（${(a.scoreLabel||'本点').replace(/(?:预测|拟分)[：:]?/g,'')}${a.score}分）`;
  const aw=490,answerSize=role('question.theory.2.1').size,answerStyle={lineSpacing:role('question.theory.2.1').lineSpacing},innerGap=gap('question.theory.2.1','question.application.2.1'),scoreGap=10,branchGap=Math.min(gap('question.application.2.1','question.theory.2.2'),gap('question.application.3.1','question.theory.3.2'));
@@ -97,9 +103,10 @@ for(const q of data.questions){
  const labelH=a=>h(labelText(a),102,22,{bold:true,lineSpacing:1.25});
  const contentH=a=>Math.max(labelH(a),answerH(a.principle,{bold:true})+innerGap+answerH(a.application)+(a.score===undefined?0:scoreGap+answerH(scoreText(a),{font:F.label,bold:true})));
  const bh=a=>contentH(a)+branchGap;
- for(const [part,items] of paginate(q.answer,696-top,bh).entries()){
+ // A gap is needed between branches, not after the final branch.
+ for(const [part,items] of paginate(q.answer,696-top+branchGap,bh).entries()){
   for(const a of items)if(a.branchLabelDisplay&&a.branchLabelDisplay.replace(/\s/g,'')!==(a.branchLabel||'').replace(/\s/g,''))throw Error('branchLabelDisplay may only add semantic line breaks');
-  const spare=Math.max(0,696-top-items.reduce((n,a)=>n+bh(a),0));
+  const spare=Math.max(0,696-top+branchGap-items.reduce((n,a)=>n+bh(a),0));
   const extra=items.length>1?Math.min(Math.max(0,gap('question.application.2.1','question.theory.2.2')-branchGap),spare/(items.length-1)):0;
   const {s}=add(q,'answer',part+1,material,size);let y=top+Math.min(24,Math.max(0,(spare-extra*(items.length-1))/2));const steps=[];
   for(const [i,a] of items.entries()){
@@ -108,14 +115,18 @@ for(const q of data.questions){
    const bs=brace(s,720,y,hh,name+'-brace',C.outerBrace);
    const ph=put(s,a.principle,750,y,aw,{...answerStyle,size:answerSize,bold:true,focus:a.principleFocus||[],name:name+'-principle'});
    put(s,a.application,750,y+ph+innerGap,aw,{...answerStyle,size:answerSize,color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
-   const group=[name+'-root',...bs,name+'-principle',name+'-application'];
+   const theoryGroup=[name+'-root',...bs,name+'-principle'];
+   const applicationGroup=[name+'-application'];
    if(a.score!==undefined){if(!q.scoreBasis||q.scoreBasis.includes('无原始分值'))throw Error(`${q.id}: answer score without basis`);
-    put(s,scoreText(a),750,y+ph+innerGap+answerH(a.application)+scoreGap,aw,{...answerStyle,font:F.label,bold:true,color:C.score,name:name+'-score'});group.push(name+'-score');}
-   steps.push(group);y+=bh(a)+extra;
+    put(s,scoreText(a),750,y+ph+innerGap+answerH(a.application)+scoreGap,aw,{...answerStyle,font:F.label,bold:true,color:C.score,name:name+'-score'});applicationGroup.push(name+'-score');}
+   steps.push(theoryGroup,applicationGroup);y+=bh(a)+extra;
   }
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }
+ const pages=slides.slice(firstSlide);
+ layoutDecisions.push({questionId:q.id,mode:q.layout?.analysisPages?'expanded-analysis':'same-page-reveal',pages:pages.map(x=>x.id),materialHeight:h(q.material,554,size,{font:F.material}),materialLimit:665,answerHeight:q.answer.reduce((n,a)=>n+bh(a),0)-branchGap,answerLimit:696-top,reasons:[...(pages.some(x=>x.kind==='material')?['full material exceeds measured area at minimum readable font']:[]),...(pages.filter(x=>x.kind==='answer').length>1?['complete answer branches exceed measured area with template typography']:[]),...(q.layout?.analysisPages?[q.layout.reason]:[])]});
 }
+await fs.writeFile(path.join(output,'layout-decisions.json'),JSON.stringify(layoutDecisions,null,2));
 await fs.writeFile(path.join(output,'slides.json'),JSON.stringify(slides,null,2));
 await fs.writeFile(path.join(output,'reveal-plan.json'),JSON.stringify(reveal,null,2));
 if(!layoutOnly){
