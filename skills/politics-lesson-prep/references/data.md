@@ -5,7 +5,7 @@
 题目文件 `questions.json`：顶层 `lesson`, `questions`, `excluded`。
 每题：`id`, `title`, `sourceQuestion`(原题号), `sourceSubquestion`, `material`(完整所需材料), `prompt`(原设问), `referenceAnswer`(原参考答案), `scope`, `task`(学生须完成的具体任务), `knowledge`(所需原理字符串数组), `analysis`(数组，每项含 `evidence`原句、`principle`、`reason`说明对应依据), `answer`(数组，每项含 `principle`, `application`, 可选数值`score`), `scoreBasis`(原题/来源或明确的教学预测依据), `teaching`对象。
 `teaching`含 `ask`, `expected`, `misconception`, `followup`, `explanation`, `check`, `transition` 字符串；可用换行列出必要的多个步骤。不得用空话填满字段。answer 是可直接示范给学生的规范答案，审稿说明、证据强弱提示、参考答案纠错和“材料未交代”等元说明放在 teaching 或备注，不混入示范答案。
-`excluded`数组每项含`sourceQuestion`, `sourceSubquestion`, `reason`。
+`excluded`数组每项含`sourceQuestion`, `sourceSubquestion`, `reason`，仅记录用户明确要求排除的题目；课时不足、低相关性、同类重复或跨课配套问不能列入excluded，须保留题目与答案并以optional安排建议取舍。
 
 教学计划 `teaching-plan.json`：`lesson`, `designRationale`（教学主线与关键安排理由）, `preparation`数组（教师课前需掌握的具体判断）, `goals`数组, `difficulties`数组, `periods`数组。
 每课时含 `title`, `quickCard`（`mainline`主线、`mustExplain`区别数组、`questions`问题数组、`timeChoice`取舍）, `activities` 数组；活动含 `id`, `title`, `minutes`, `kind`(`diagnosis`/`knowledge`/`question`/`recap`), `knowledgeTopics`(原稿小点标题数组), `questionIds`数组，以及上述`teaching`对象和`optional`布尔值。活动另含短句`cue`：`ask`, `explain`, `pitfall`, `followup`, `check`, `transition`，每项约35—50汉字，供课堂速查，不用泛泛指令代替具体辨析。每课时建议必讲活动总计40分钟；可选活动说明替换项目及用时，不全量累加。`optional`只表示教学取舍，不能据此设置幻灯片隐藏或添加投影标签；默认页面可见，选讲理由和接续页写入teaching、cue及相关页面备注。不把内容全塞进单课时。
