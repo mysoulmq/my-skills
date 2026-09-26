@@ -2,7 +2,7 @@ import {role,gap,writeSpacing,template} from '../../lesson-image-ppt/scripts/tem
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {theme as T,put,height,shape,brace,arrow} from './question_style.mjs';
+import {theme as T,put,putSegments,height,segmentHeight,shape,brace,arrow} from './question_style.mjs';
 const [input,dependency,output,sequenceFile,planFile]=process.argv.slice(2);
 if(!output)throw Error('Usage: render_questions.mjs questions.json dependency-dir output sequence.json plan.json [--layout-only]');
 const layoutOnly=process.argv.includes('--layout-only');
@@ -53,9 +53,10 @@ function paginate(items,limit,heightFn){
 for(const q of data.questions){
  const firstSlide=slides.length;
  if(q.layout?.analysisPages&&!q.layout?.reason)throw Error(`${q.id}: separate analysis pages require a concrete teaching reason`);
+ const materialLimit=648;
  let material=q.material,size=T.material.fontSize;
- while(size>T.material.minFontSize&&h(material,554,size,{font:F.material})>665)size--;
- if(h(material,554,size,{font:F.material})>665){
+ while(size>T.material.minFontSize&&h(material,554,size,{font:F.material})>materialLimit)size--;
+ if(h(material,554,size,{font:F.material})>materialLimit){
   const parts=paginate(material.match(/[^。！？\n]+[。！？\n]?/gu)||[material],650,t=>h(t,554,28,{font:F.material}));
   parts.forEach((items,i)=>add(q,'material',i+1,items.join(''),28));
   material=q.analysis.map(a=>a.evidence).join('\n');size=28;
@@ -95,36 +96,47 @@ for(const q of data.questions){
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }
  }
- // Complete answer points remain complete, each with native branches and original sample typography.
- const scoreText=a=>a.score===undefined?'':`（${(a.scoreLabel||'本点').replace(/(?:预测|拟分)[：:]?/g,'')}${a.score}分）`;
- const aw=490,answerSize=role('question.theory.2.1').size,answerStyle={lineSpacing:role('question.theory.2.1').lineSpacing},innerGap=gap('question.theory.2.1','question.application.2.1'),scoreGap=10,branchGap=Math.min(gap('question.application.2.1','question.theory.2.2'),gap('question.application.3.1','question.theory.3.2'));
- const answerH=(text,extra={})=>h(text,aw,answerSize,{...answerStyle,...extra});
- const labelText=a=>a.branchLabelDisplay||a.branchLabel||'原理与应用';
- const labelH=a=>h(labelText(a),102,22,{bold:true,lineSpacing:1.25});
- const contentH=a=>Math.max(labelH(a),answerH(a.principle,{bold:true})+innerGap+answerH(a.application)+(a.score===undefined?0:scoreGap+answerH(scoreText(a),{font:F.label,bold:true})));
- const bh=a=>contentH(a)+branchGap;
- // A gap is needed between branches, not after the final branch.
- for(const [part,items] of paginate(q.answer,696-top+branchGap,bh).entries()){
-  for(const a of items)if(a.branchLabelDisplay&&a.branchLabelDisplay.replace(/\s/g,'')!==(a.branchLabel||'').replace(/\s/g,''))throw Error('branchLabelDisplay may only add semantic line breaks');
-  const spare=Math.max(0,696-top+branchGap-items.reduce((n,a)=>n+bh(a),0));
-  const extra=items.length>1?Math.min(Math.max(0,gap('question.application.2.1','question.theory.2.2')-branchGap),spare/(items.length-1)):0;
-  const {s}=add(q,'answer',part+1,material,size);let y=top+Math.min(24,Math.max(0,(spare-extra*(items.length-1))/2));const steps=[];
+ // The human sample treats the answer as a scoring rubric: number, theory +
+ // theory score, then material + material score. Semantic branch labels remain
+ // in data/notes but do not steal horizontal space from the final answer.
+ const cleanLabel=(value,fallback)=>(value||fallback).replace(/(?:预测|拟分)[：:]?/g,'');
+ const scoreText=(value,label)=>value===undefined?'':`（${cleanLabel(label,'本点')}${value}分）`;
+ const anyScore=a=>a.principleScore!==undefined||a.applicationScore!==undefined||a.score!==undefined;
+ const aw=590,answerX=650,numberX=616,numberW=30;
+ const answerSize=role('question.theory.2.1').size,answerStyle={size:answerSize,lineSpacing:role('question.theory.2.1').lineSpacing};
+ const innerGap=8,pointGap=22;
+ const principleSegments=a=>[
+  {text:a.principle,font:F.answer,size:answerSize,bold:true,color:C.ink,focus:a.principleFocus||[]},
+  ...(a.principleScore===undefined?[]:[{text:` ${scoreText(a.principleScore,a.principleScoreLabel||'知识')}`,font:F.label,size:answerSize,bold:true,color:C.score}]),
+ ];
+ const applicationSegments=a=>[
+  {text:a.application,font:F.answer,size:answerSize,bold:false,color:C.application,focus:a.applicationFocus||[],emphasis:a.applicationEmphasis||[]},
+  ...(a.applicationScore===undefined?[]:[{text:` ${scoreText(a.applicationScore,a.applicationScoreLabel||'对应材料-')}`,font:F.label,size:answerSize,bold:true,color:C.score}]),
+  ...(a.score===undefined?[]:[{text:` ${scoreText(a.score,a.scoreLabel||'本点')}`,font:F.label,size:answerSize,bold:true,color:C.score}]),
+ ];
+ const contentH=a=>segmentHeight(principleSegments(a),aw,answerStyle)+innerGap+segmentHeight(applicationSegments(a),aw,answerStyle);
+ const bh=a=>contentH(a)+pointGap;
+ // A gap is needed between points, not after the final point.
+ let answerNumber=0;
+ for(const [part,items] of paginate(q.answer,696-top+pointGap,bh).entries()){
+  const {s}=add(q,'answer',part+1,material,size);let y=top+20;const steps=[];
   for(const [i,a] of items.entries()){
-   const name=`${q.id}-answer-${part+1}-${i+1}`,hh=contentH(a);
-   put(s,labelText(a),616,y+Math.max(0,(hh-labelH(a))/2),102,{size:22,bold:true,lineSpacing:1.25,name:name+'-root'});
-   const bs=brace(s,720,y,hh,name+'-brace',C.outerBrace);
-   const ph=put(s,a.principle,750,y,aw,{...answerStyle,size:answerSize,bold:true,focus:a.principleFocus||[],name:name+'-principle'});
-   put(s,a.application,750,y+ph+innerGap,aw,{...answerStyle,size:answerSize,color:C.application,emphasis:a.applicationEmphasis||[],focus:a.applicationFocus||[],name:name+'-application'});
-   const theoryGroup=[name+'-root',...bs,name+'-principle'];
+   if(anyScore(a)&&(!q.scoreBasis||q.scoreBasis.includes('无原始分值')))throw Error(`${q.id}: visible answer score without source basis`);
+   if(a.score!==undefined&&(a.principleScore!==undefined||a.applicationScore!==undefined))throw Error(`${q.id}: use split scores or legacy branch score, not both`);
+   const name=`${q.id}-answer-${part+1}-${i+1}`;
+   const numberName=name+'-number';
+   answerNumber++;
+   put(s,`${answerNumber}.`,numberX,y,numberW,{...answerStyle,bold:true,name:numberName});
+   const ph=putSegments(s,principleSegments(a),answerX,y,aw,{...answerStyle,name:name+'-principle'});
+   putSegments(s,applicationSegments(a),answerX,y+ph+innerGap,aw,{...answerStyle,name:name+'-application'});
+   const theoryGroup=[numberName,name+'-principle'];
    const applicationGroup=[name+'-application'];
-   if(a.score!==undefined){if(!q.scoreBasis||q.scoreBasis.includes('无原始分值'))throw Error(`${q.id}: answer score without basis`);
-    put(s,scoreText(a),750,y+ph+innerGap+answerH(a.application)+scoreGap,aw,{...answerStyle,font:F.label,bold:true,color:C.score,name:name+'-score'});applicationGroup.push(name+'-score');}
-   steps.push(theoryGroup,applicationGroup);y+=bh(a)+extra;
+   steps.push(theoryGroup,applicationGroup);y+=bh(a);
   }
   reveal.slides.push({slide:s._lessonNumber,steps});slides.at(-1).clicks=steps;
  }
  const pages=slides.slice(firstSlide);
- layoutDecisions.push({questionId:q.id,mode:q.layout?.analysisPages?'expanded-analysis':'same-page-reveal',pages:pages.map(x=>x.id),materialHeight:h(q.material,554,size,{font:F.material}),materialLimit:665,answerHeight:q.answer.reduce((n,a)=>n+bh(a),0)-branchGap,answerLimit:696-top,reasons:[...(pages.some(x=>x.kind==='material')?['full material exceeds measured area at minimum readable font']:[]),...(pages.filter(x=>x.kind==='answer').length>1?['complete answer branches exceed measured area with template typography']:[]),...(q.layout?.analysisPages?[q.layout.reason]:[])]});
+ layoutDecisions.push({questionId:q.id,mode:q.layout?.analysisPages?'expanded-analysis':'same-page-reveal',pages:pages.map(x=>x.id),materialHeight:h(q.material,554,size,{font:F.material}),materialLimit,answerHeight:q.answer.reduce((n,a)=>n+bh(a),0)-pointGap,answerLimit:696-top,reasons:[...(pages.some(x=>x.kind==='material')?['full material exceeds measured area at minimum readable font']:[]),...(pages.filter(x=>x.kind==='answer').length>1?['complete answer points exceed measured area with scoring-rubric typography']:[]),...(q.layout?.analysisPages?[q.layout.reason]:[])]});
 }
 await fs.writeFile(path.join(output,'layout-decisions.json'),JSON.stringify(layoutDecisions,null,2));
 await fs.writeFile(path.join(output,'slides.json'),JSON.stringify(slides,null,2));

@@ -22,7 +22,7 @@ theme.type.prompt=role('question.prompt.2').size;
 theme.material.fontSize=role('question.material.2').size;
 for(const family of new Set(Object.values(theme.fonts)))if(!GlobalFonts.families.some(f=>f.family===family))throw Error(`Missing required question font: ${family}; load its licensed font file before rendering`);
 const ctx=createCanvas(2,2).getContext('2d');
-export function rows(str,w,{size=24,font=theme.fonts.answer,bold=false,color=theme.colors.ink,focus=[],contrast=[],emphasis=[]}={}){
+function glyphs(str,{size=24,font=theme.fonts.answer,bold=false,color=theme.colors.ink,focus=[],contrast=[],emphasis=[]}={}){
   for(const word of [...focus,...contrast,...emphasis])if(!word||!str.includes(word))throw Error(`Visual mark absent from text: ${word}`);
   const ranges=words=>words.flatMap(word=>{const r=[];let i=0;while((i=str.indexOf(word,i))>=0){r.push([i,i+word.length]);i+=word.length;}return r;});
   const hi=ranges(focus),red=ranges(contrast),heavy=ranges(emphasis);const glyphs=[];let offset=0;
@@ -33,10 +33,17 @@ export function rows(str,w,{size=24,font=theme.fonts.answer,bold=false,color=the
     const width=ctx.measureText(ch).width;
     glyphs.push({ch,width,run:ch,textStyle:{typeface:font,bold:bold||marked||strong,color:marked?theme.colors.contrast:color,...(highlighted?{highlight:theme.colors.highlight}:{})}});
   }
-  return wrapGlyphs(glyphs,w-8).map(row=>row.map(({ch,width,...run})=>run));
+  return glyphs;
+}
+export function rows(str,w,opts={}){
+  return wrapGlyphs(glyphs(str,opts),w-8).map(row=>row.map(({ch,width,...run})=>run));
+}
+export function segmentRows(segments,w){
+  return wrapGlyphs(segments.flatMap(({text,...opts})=>glyphs(text,opts)),w-8).map(row=>row.map(({ch,width,...run})=>run));
 }
 export const spacing=opts=>opts.lineSpacing??1.15;
 export const height=(str,w,opts={})=>rows(str,w,opts).length*(opts.size||24)*spacing(opts)+8;
+export const segmentHeight=(segments,w,opts={})=>segmentRows(segments,w).length*(opts.size||24)*spacing(opts)+8;
 export function put(s,str,x,y,w,opts={}){
   const size=opts.size||24,h=height(str,w,opts);
   if(y+h>706)throw Error(`Question text overflow ${opts.name}: bottom ${y+h}`);
@@ -44,6 +51,14 @@ export function put(s,str,x,y,w,opts={}){
   sh.text.style={fontSize:size,typeface:opts.font||theme.fonts.answer,color:opts.color||theme.colors.ink,bold:opts.bold||false,wrap:'none',autoFit:'none',lineSpacing:spacing(opts),insets:{top:0,bottom:0,left:0,right:0}};
   recordSpacing(s._lessonNumber,opts.name,spacing(opts));
   sh.text=rows(str,w,opts);return h;
+}
+export function putSegments(s,segments,x,y,w,opts={}){
+  const size=opts.size||24,h=segmentHeight(segments,w,opts);
+  if(y+h>706)throw Error(`Question text overflow ${opts.name}: bottom ${y+h}`);
+  const sh=s.shapes.add({geometry:'textbox',name:opts.name,position:{left:x,top:y,width:w,height:h},fill:'none',line:{fill:'none',width:0}});
+  sh.text.style={fontSize:size,typeface:opts.font||theme.fonts.answer,color:opts.color||theme.colors.ink,bold:opts.bold||false,wrap:'none',autoFit:'none',lineSpacing:spacing(opts),insets:{top:0,bottom:0,left:0,right:0}};
+  recordSpacing(s._lessonNumber,opts.name,spacing(opts));
+  sh.text=segmentRows(segments,w);return h;
 }
 export function shape(s,geometry,x,y,w,h,{name,color=theme.colors.innerBrace,fill='none',width=theme.lineWidth}={}){
   return s.shapes.add({geometry,name,position:{left:x,top:y,width:w,height:h},fill,line:{fill:color,width}});

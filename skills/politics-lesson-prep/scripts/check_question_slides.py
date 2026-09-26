@@ -24,12 +24,26 @@ def highlighted_question_shapes(root, question_id):
     return names
 
 
+def named_text(root, suffix):
+    result=[]
+    for shape in root.iter(P+'sp'):
+        props=shape.find('.//'+P+'cNvPr')
+        name=props.get('name','') if props is not None else ''
+        if name.endswith(suffix):
+            result.append(''.join(t.text or '' for t in shape.iter(A+'t')))
+    return result
+
+
+def score_text(value, label):
+    return f'（{re.sub(r"(?:预测|拟分)[：:]?", "", label)}{value}分）'
+
+
 
 def check(pptx,questions,mapping):
     with ZipFile(pptx) as z:files={n:z.read(n) for n in z.namelist()}
     order=ordered_slides(files);errors=[]
     for q in questions['questions']:
-        grouped={};material_parts=[]
+        grouped={};material_parts=[];answer_numbers=[]
         for page in mapping:
             if page.get('questionId')!=q['id']:continue
             number=page['page'] if 'page' in page else page['sourceSlide']
@@ -38,6 +52,8 @@ def check(pptx,questions,mapping):
                 errors.append(f'{q["id"]}: page {number} unexpected question highlight in {name}')
             text=''.join(t.text or '' for t in root.iter(A+'t'))
             grouped.setdefault(page['kind'],[]).append(norm(text))
+            if page['kind']=='answer':
+                answer_numbers.extend(named_text(root,'-number'))
             if q.get('totalScore') is not None and not any(float(v)==q['totalScore'] for v in re.findall(r'[（(]\s*(\d+(?:\.\d+)?)\s*分(?:[，,]\s*预测)?\s*[）)]',text)):
                 errors.append(f'{q["id"]}: page {number} missing question total score')
             if page['kind']=='material':
@@ -52,14 +68,29 @@ def check(pptx,questions,mapping):
             pool=''.join(material_parts) if field=='material' and material_parts else all_text
             if norm(q[field]) not in pool:errors.append(f'{q["id"]}: missing visible {field}')
         answers=''.join(grouped.get('answer',[]))
+        expected_numbers=[f'{i}.' for i in range(1,len(q['answer'])+1)]
+        if answer_numbers!=expected_numbers:
+            errors.append(f'{q["id"]}: answer numbering {answer_numbers!r}, expected {expected_numbers!r}')
         for i,item in enumerate(q['answer']):
             for field in ('principle','application'):
                 if norm(item[field]) not in answers:errors.append(f'{q["id"]}: answer {i+1} missing {field}')
+            score_specs=[
+                ('principleScore','principleScoreLabel','知识'),
+                ('applicationScore','applicationScoreLabel','对应材料-'),
+                ('score','scoreLabel','本点'),
+            ]
+            if 'score' in item and ('principleScore' in item or 'applicationScore' in item):
+                errors.append(f'{q["id"]}: answer {i+1} mixes branch score and split scores')
+            for value_key,label_key,default_label in score_specs:
+                if value_key in item:
+                    expected=norm(score_text(item[value_key],item.get(label_key,default_label)))
+                    if expected not in answers:errors.append(f'{q["id"]}: answer {i+1} missing visible {value_key}')
         analysis=''.join(grouped.get('analysis',[]))
-        if norm(q['task']) not in analysis:errors.append(f'{q["id"]}: missing task')
-        for i,item in enumerate(q['analysis']):
-            for field in ('evidence','principle'):
-                if norm(item[field]) not in analysis:errors.append(f'{q["id"]}: analysis {i+1} missing {field}')
+        if grouped.get('analysis'):
+            if norm(q['task']) not in analysis:errors.append(f'{q["id"]}: missing task')
+            for i,item in enumerate(q['analysis']):
+                for field in ('evidence','principle'):
+                    if norm(item[field]) not in analysis:errors.append(f'{q["id"]}: analysis {i+1} missing {field}')
     return {'pass':not errors,'errors':errors}
 
 
