@@ -14,20 +14,19 @@ def main():
     p=sub.add_parser('verify');p.add_argument('run')
     p=sub.add_parser('approve');p.add_argument('run');p.add_argument('--review',required=True)
     p=sub.add_parser('config');p.add_argument('--set',action='append',default=[]);p.add_argument('--save-defaults',action='store_true')
-    args=ap.parse_args();default_path=ROOT/'assets/defaults.json';cfg=json.loads(default_path.read_text())
+    from configuration import resolve,require_names,check_resolution
+    args=ap.parse_args();overrides={}
     if args.command in ['config','convert']:
-        if getattr(args,'config',None):
-            overrides=json.loads(Path(args.config).read_text())
-            if set(overrides)-set(cfg):raise ValueError('未知配置项: '+str(set(overrides)-set(cfg)))
-            cfg.update(overrides)
+        if getattr(args,'config',None):overrides.update(json.loads(Path(args.config).read_text()))
         for item in args.set:
             key,val=item.split('=',1)
-            if key not in cfg:raise ValueError('未知配置项:'+key)
-            cfg[key]=int(val) if key=='answer_space_lines' else val
-        if not isinstance(cfg['answer_space_lines'],int) or not 0<=cfg['answer_space_lines']<=20:raise ValueError('答题留白必须是0至20行')
-        if any(not isinstance(cfg[k],str) or '\n' in cfg[k] for k in cfg if k not in ['title','answer_space_lines']):raise ValueError('元数据必须是单行字符串')
+            overrides[key]=int(val) if key=='answer_space_lines' else val
+    cfg, resolution=resolve(overrides)
+    if not isinstance(cfg['answer_space_lines'],int) or not 0<=cfg['answer_space_lines']<=20:raise ValueError('答题留白必须是0至20行')
+    if any(not isinstance(cfg[k],str) or '\n' in cfg[k] for k in cfg if k not in ['title','answer_space_lines']):raise ValueError('元数据必须是单行字符串')
     if args.command=='config':
-        if args.save_defaults:write_json(default_path,cfg)
+        if args.save_defaults:
+            write_json(ROOT/'assets/defaults.json',cfg)
         print(json.dumps(cfg,ensure_ascii=False,indent=2));return
     if args.command=='inspect':
         result=select(inspect(args.input))
@@ -35,7 +34,9 @@ def main():
         print(json.dumps(result,ensure_ascii=False,indent=2));return
     if args.command=='convert':
         from generate import generate,title_for
+        require_names(cfg)
         model=select(inspect(args.input))
+        title_for(model['title'],cfg)
         if model['errors']:print(json.dumps(model,ensure_ascii=False,indent=2));sys.exit(2)
         base=Path(args.out);base.mkdir(parents=True,exist_ok=True)
         run=base/(Path(args.input).stem+'-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'));run.mkdir()
@@ -44,7 +45,7 @@ def main():
         write_json(run/'deletions.json',{'source':model['source'],'removed_questions':model['removed_questions'],'number_mapping':model['number_mapping']})
         manifests={}
         for v in ['题目版','答案版']:manifests[v]=generate(args.input,model,cfg,v,run/'internal'/f'{v}.docx')
-        write_json(run/'manifest.json',{'source':model['source'],'source_sha256':model['source_sha256'],'config':cfg,'variants':manifests,'review_issues':model['review_issues']})
+        write_json(run/'manifest.json',{'source':model['source'],'source_sha256':model['source_sha256'],'config':cfg,'config_resolution':resolution,'variants':manifests,'review_issues':model['review_issues']})
         office([run/'internal'/f'{v}.docx' for v in manifests],run/'candidates','doc:MS Word 97')
         from deletion_report import build
         build(model,run/'candidates/删除记录.pdf',title_for(model['title'],cfg))
@@ -58,6 +59,8 @@ def main():
     elif args.command=='approve':
         run=Path(args.run);result=json.loads((run/'verification.json').read_text());review=json.loads(Path(args.review).read_text())
         if result['errors']:raise ValueError('自动检查未通过')
+        info=json.loads((run/'manifest.json').read_text())
+        if not info.get('config_resolution') or check_resolution(info):raise ValueError('缺少有效配置来源核验，需重新生成')
         for v,record in result['files'].items():
             if digest(run/'candidates'/f'{v}.doc')!=record['sha256']:raise ValueError('DOC审核后已变化')
             vr=review.get(v,{})

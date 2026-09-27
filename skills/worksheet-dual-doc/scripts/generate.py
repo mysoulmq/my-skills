@@ -58,10 +58,11 @@ def title_for(raw,config):
     t=re.sub(r'^高效作业\s*\d+\s*','',raw)
     t=re.sub(r'[（(]见学生用书.*$','',t).strip()
     # Explicit content-topic mapping for the supplied textbook, not assignment-number guessing.
-    lessons={'探究世界的本质':2,'把握世界的规律':3,'探索认识的奥秘':4,'寻觅社会的真谛':5,'实现人生的价值':6,'继承发展中华优秀传统文化':7}
+    lessons={'探究世界的本质':2,'把握世界的规律':3,'探索认识的奥秘':4,'寻觅社会的真谛':5,'实现人生的价值':6,'继承发展中华优秀传统文化':7,'文化的民族性与多样性':8,'学习借鉴外来文化的有益成果':8,'发展中国特色社会主义文化':9,'时代精神的精华':1,'追求智慧的学问':1}
     for topic,n in lessons.items():
         if t.startswith(topic):return f'第{n}课  {t}'
-    return t
+    if re.match(r'^第[一二三四五六七八九十0-9]+课\s*\S',t):return t
+    raise ValueError('无法可靠识别课次，请明确完整标题（--set title=第N课 主题），不能静默省略课次')
 
 def generate(source,model,config,variant,out):
     doc=Document(ROOT/'assets/template.docx');src=Document(source)

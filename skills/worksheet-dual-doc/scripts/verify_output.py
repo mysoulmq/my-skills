@@ -32,6 +32,9 @@ def effective(r,p,doc,prop,attr='val'):
 
 def verify(run):
     run=Path(run);info=json.loads((run/'manifest.json').read_text());errors=[];warnings=[];stats={};actual_common={}
+    from configuration import check_resolution
+    errors.extend(check_resolution(info))
+    if not info.get('config_resolution'):warnings.append('旧运行缺少配置来源，不能用于新交付')
     source_model=json.loads((run/'input.json').read_text())
     from inspect_input import inspect
     from selection import select
@@ -108,6 +111,8 @@ def verify(run):
                         if any(x in data for x in [b'<w:del ',b'<w:ins ',b'<w:comment ',b'<w:vanish/>',b'<w:vanish w:val="true"']):errors.append(v+'包含隐藏/修订/批注')
             # Metadata check verifies actual saved default or overridden names.
             meta=text(allblocks[1]);cfg=info['config']
+            from generate import title_for
+            if norm(text(allblocks[0]))!=norm(title_for(source_model['title'],cfg)):errors.append(v+'标题与完整课次不一致')
             if cfg['compiler'] not in meta or cfg['proofreader'] not in meta:errors.append(v+'编制/校对信息错误')
             meta_runs=allblocks[1].xpath('.//w:r[w:t]')
             if any(not r.xpath('./w:rPr/w:b[not(@w:val) or @w:val="1" or @w:val="true"]') for r in meta_runs):errors.append(v+'信息栏未按样本加粗')
