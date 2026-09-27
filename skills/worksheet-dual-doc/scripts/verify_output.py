@@ -155,9 +155,11 @@ def verify(run):
     for v,pdf in zip(['题目版','答案版'],pdfs):
         raster=pdfium.PdfDocument(pdf)
         with pdfplumber.open(pdf) as d:
-            from layout_audit import audit_question_layout
+            from layout_audit import audit_question_layout,audit_point_layout
             layout=audit_question_layout(d,source_model,info['variants'][v])
             errors.extend(v+x for x in layout['errors']);stats[v]['layout']=layout
+            points=audit_point_layout(d,source_model)
+            errors.extend(v+x for x in points['errors']);stats[v]['point_layout']=points
             stats[v]['pages']=len(d.pages);stats[v]['pdf_sha256']=digest(pdf)
             title_chars=[c for c in d.pages[0].chars if re.search('[\u4e00-\u9fff]',c['text']) and abs(c['size']-14)<.2]
             if title_chars and any('STKaiti' not in c['fontname'] for c in title_chars):warnings.append(v+'标题指定华文楷体，本机预览使用替代字体；真实字体环境的字形和换行未验证')

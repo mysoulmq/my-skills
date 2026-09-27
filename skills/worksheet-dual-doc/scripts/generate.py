@@ -156,6 +156,8 @@ def generate(source,model,config,variant,out):
                 doc._element.body.insert(offset+i,el)
                 manifest.insert(i+len(seen)-1,{'qid':q['id'],'role':'answer','kind':'p','text':norm(text(el)),'images':[],'choice':True})
                 offset+=1
+    from point_layout import format_points
+    manifest=format_points(doc,manifest)
     # Unique drawing IDs across imported images.
     for i,n in enumerate(doc._element.xpath('//wp:docPr'),1):n.set('id',str(i))
     prune(doc);doc.save(out)
