@@ -33,7 +33,10 @@ def format_block(e,doc,role,choice=False,number=1):
         pp=p.find(qn('w:pPr'))
         if pp is not None:p.remove(pp)
         par=Paragraph(p,doc._body);par.style=doc.styles['WorksheetAnswer' if role=='answer' else 'WorksheetBody']
-        fmt=par.paragraph_format;fmt.left_indent=Pt(0);fmt.first_line_indent=Pt(0);fmt.line_spacing=Pt(14);fmt.line_spacing_rule=WD_LINE_SPACING.AT_LEAST;fmt.space_after=Pt(2);fmt.widow_control=True
+        fmt=par.paragraph_format;fmt.left_indent=Pt(0);fmt.first_line_indent=Pt(0);fmt.line_spacing=Pt(16);fmt.line_spacing_rule=WD_LINE_SPACING.EXACTLY;fmt.space_after=Pt(2);fmt.widow_control=True
+        snap=OxmlElement('w:snapToGrid');snap.set(qn('w:val'),'0');p.get_or_add_pPr().append(snap)
+        if p.xpath('.//w:drawing'):
+            fmt.line_spacing_rule=WD_LINE_SPACING.AT_LEAST
         fmt.keep_with_next=role in ['section','stem'] or bool(e.xpath('.//w:drawing'));fmt.keep_together=False
         if role=='section':fmt.space_before=Pt(5)
         if choice and role in ['stem','body'] and e.tag==qn('w:p'):
@@ -114,12 +117,18 @@ def generate(source,model,config,variant,out):
         if b['role']=='stem' and q and q['type']=='choice':
             am=ANSWER.search(text(e))
             if am:patch_text(e,am.start(),am.end(),'')
+            # Remove the now-obsolete answer-slot tab/spaces, without touching drawings.
+            value=text(e);patch_text(e,len(value.rstrip()),len(value),'')
             sm=STEM.match(text(e));end=sm.end()
             while end<len(text(e)) and text(e)[end].isspace():end+=1
             patch_text(e,0,end,'')
             r=OxmlElement('w:r');t=OxmlElement('w:t');t.text=f"(　\u0020　){q['number']}.";r.append(t)
             e.insert(1 if e.find(qn('w:pPr')) is not None else 0,r)
         format_block(e,doc,b['role'],q is not None and q['type']=='choice',q['number'] if q else 1)
+        if q and q['type']=='written' and b['role']=='body':
+            from paragraph_rules import is_written_prompt
+            if is_written_prompt(text(e)) and e.tag==qn('w:p'):
+                for run in Paragraph(e,doc._body).runs:run.bold=True
         if b['role']=='placeholder':
             pf=Paragraph(e,doc._body).paragraph_format
             pf.space_after=Pt(168);pf.keep_with_next=False

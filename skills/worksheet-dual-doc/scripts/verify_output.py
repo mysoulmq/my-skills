@@ -27,6 +27,7 @@ def effective(r,p,doc,prop,attr='val'):
     for c in candidates:
         if c is not None:
             n=c.find(qn('w:'+prop))
+            if n is not None and prop=='b':return n.get(qn('w:'+attr),'1')
             if n is not None and n.get(qn('w:'+attr)) is not None:return n.get(qn('w:'+attr))
     return None
 
@@ -62,6 +63,8 @@ def verify(run):
                     if effective(r,par._p,d,'rFonts','eastAsia') not in fonts or effective(r,par._p,d,'sz') != size:errors.append(v+part+'字体或字号偏离样本')
 
             blocks=[e for e in allblocks[2:] if norm(text(e)) or image_hashes(e,d.part)]
+            from paragraph_rules import audit_paragraphs
+            errors.extend(v+'/'+x for x in audit_paragraphs(d,blocks,source_model,effective))
             if len(blocks)!=len(expected):errors.append(f'{v}块数不同: {len(blocks)} != {len(expected)}')
             actual_common[v]=[]
             expected_tables=[table_structure(source_elements[b['index']]) for b in source_model['blocks'] if b.get('kind')=='tbl' and not (v=='题目版' and b['role']=='answer')]

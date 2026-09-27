@@ -34,13 +34,21 @@ def audit_question_layout(pdf,model,manifest):
         full=compact(stems[questions[n]['id']]);consumed=len(line['text'])
         if not full.startswith(line['text']):
             errors.append(f'/第{n}题无法将可见题干与原文逐行对应');records.append(rec);continue
-        remaining=full[consumed:]
+        remaining=full[consumed:];previous=line
+        has_images=any(b.get('images') for b in manifest if b['qid']==questions[n]['id'] and b['role']=='stem')
         for following in lines[i+1:]:
             if not remaining:break
             # Page headers and footers are not part of the question paragraph.
             if following['page']!=line['page'] and all(abs(c['size']-10.5)>0.2 for c in following['chars']):continue
             if not remaining.startswith(following['text']):
                 errors.append(f'/第{n}题续行无法对应原文，需定位复核');break
+            if not has_images and following['page']==previous['page']:
+                # Compare actual SimSun glyph origins, excluding fallback source-label metrics.
+                def top(row):return min(c['top'] for c in row['chars'] if 'SimSun' in c['fontname'])
+                if any('SimSun' in c['fontname'] for c in previous['chars']) and any('SimSun' in c['fontname'] for c in following['chars']):
+                    dy=top(following)-top(previous)
+                    if not 14<=dy<=18:errors.append(f'/第{n}题题干行距异常:{dy:.2f}pt')
+            previous=following
             x=following['chars'][0]['x0'];delta=x-dot_end
             # First-character CJK opening punctuation may hang by ~3.2pt.
             tolerance=3.6 if following['text'][0] in '（“《「『【' else 1.0
