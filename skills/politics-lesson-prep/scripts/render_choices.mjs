@@ -3,15 +3,17 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {validateChoice} from './choice_contract.mjs';
-import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont} from './question_style.mjs';
+import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont,hasFont} from './question_style.mjs';
 import {writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 const [input,output]=process.argv.slice(2);
 if(!output) throw Error('Usage: render_choices.mjs choices.json output-directory');
 const {Presentation,PresentationFile}=await import(pathToFileURL(path.join(process.env.LESSON_NODE_MODULES,'@oai/artifact-tool/dist/artifact_tool.mjs')));
 const data=JSON.parse(await fs.readFile(input,'utf8'));
-const choiceFonts={source:'STLiti',option:'SimSun'};
+const choiceFonts={source:'LiSu',option:'SimSun'};
 requireFont(choiceFonts.option);
-if(data.questions.some(q=>q.source))requireFont(choiceFonts.source);
+const sourceFontLocallyVerified=hasFont(choiceFonts.source);
+// The user targets Windows LiSu: retain the exact font even when local previews substitute it.
+if(data.questions.some(q=>q.source)&&!sourceFontLocallyVerified)console.warn('LiSu is not installed locally; exported source font remains LiSu, local preview/metrics are unverified.');
 const p=Presentation.create({slideSize:T.canvas}), mapping=[],reveal={slides:[]};
 const measure=(text,w,size,font=T.fonts.answer)=>height(text,w,{size,font,lineSpacing:1.25});
 await fs.mkdir(path.join(output,'previews'),{recursive:true});
@@ -71,5 +73,5 @@ for(const [i,s] of p.slides.items.entries()){
 }
 await fs.writeFile(path.join(output,'slides.json'),JSON.stringify(mapping,null,2));
 await fs.writeFile(path.join(output,'reveal-plan.json'),JSON.stringify(reveal,null,2));
-await fs.writeFile(path.join(output,'template-source.json'),JSON.stringify({sha256:template.sha256}));
+await fs.writeFile(path.join(output,'template-source.json'),JSON.stringify({sha256:template.sha256,sourceFont:choiceFonts.source,sourceFontLocallyVerified}));
 console.log(JSON.stringify({slides:mapping.length}));
