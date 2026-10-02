@@ -61,7 +61,7 @@ for(const q of data.questions){
   if(q.combinations) put(s,q.combinations.map(c=>`${c.key}．${c.members.join('')}`).join('     '),48,616,920,{size:28,font:choiceFonts.option,name:`${id}-combinations`});
   put(s,`答案  ${q.answer}`,1020,640,220,{size:30,bold:true,color:T.colors.prompt,name:`${id}-answer`});
   // Detailed reasoning stays out of the projected text and remains available for review.
-  s.speakerNotes.textFrame.setText([`来源：${q.source||'自编训练，非真题'}`,`点击1显示答案；之后按选项顺序显示纠错旁注。`,...q.options.map(o=>`${o.key}：${o.reason}`)].join('\n'));
+  s.speakerNotes.textFrame.setText([...(q.source?[`来源：${q.source}`]:[]),`点击1显示答案；之后按选项顺序显示纠错旁注。`,...q.options.map(o=>`${o.key}：${o.reason}`)].join('\n'));
   mapping.push({id,questionId:q.id,kind:'choice',stage:'teaching',sourceSlide:s._lessonNumber,clicks:steps});
   reveal.slides.push({slide:s._lessonNumber,steps});
 }
