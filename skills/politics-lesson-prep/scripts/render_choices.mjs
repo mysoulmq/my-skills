@@ -18,7 +18,7 @@ const p=Presentation.create({slideSize:T.canvas}), mapping=[],reveal={slides:[]}
 const measure=(text,w,size,font=T.fonts.answer)=>height(text,w,{size,font,lineSpacing:1.25});
 await fs.mkdir(path.join(output,'previews'),{recursive:true});
 for(const q of data.questions){
-  validateChoice(q);
+  validateChoice(q,{requireReview:true});
   const s=p.slides.add();s._lessonNumber=p.slides.items.length;s.background.fill='#FFFFFF';
   const id=`${q.id}-choice-1`;
   shape(s,'line',40,78,1200,0,{name:`${id}-rule`,color:T.colors.border,width:1});

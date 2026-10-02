@@ -1,5 +1,6 @@
+import {validateChoiceReview} from './choice_review.mjs';
 // Check internal consistency; an independent subject review must still judge the reasons.
-export function validateChoice(q) {
+export function validateChoice(q, {requireReview=false}={}) {
   if (!q.id || !q.stem?.trim() || !Array.isArray(q.options) || q.options.length !== 4)
     throw Error('Choice requires id, stem and four options/statements');
   const keys=q.options.map(o=>o.key);
@@ -10,6 +11,7 @@ export function validateChoice(q) {
     if (o.verdict!=='supported' && (!o.diagnostic?.trim() || [...o.diagnostic].length>36))
       throw Error(`${q.id}: rejected options need a concise diagnostic (max 36 characters)`);
   }
+  if(requireReview || q.origin==='document' || q.review) validateChoiceReview(q);
   const accepted=q.options.filter(o=>o.verdict==='supported').map(o=>o.key).sort();
   if (q.combinations) {
     if(q.combinations.length!==4 || new Set(q.combinations.map(c=>c.key)).size!==4)
