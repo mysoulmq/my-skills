@@ -3,12 +3,15 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {validateChoice} from './choice_contract.mjs';
-import {theme as T,put,height,shape,textWidth} from './question_style.mjs';
+import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont} from './question_style.mjs';
 import {writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 const [input,output]=process.argv.slice(2);
 if(!output) throw Error('Usage: render_choices.mjs choices.json output-directory');
 const {Presentation,PresentationFile}=await import(pathToFileURL(path.join(process.env.LESSON_NODE_MODULES,'@oai/artifact-tool/dist/artifact_tool.mjs')));
 const data=JSON.parse(await fs.readFile(input,'utf8'));
+const choiceFonts={source:'STLiti',option:'SimSun'};
+requireFont(choiceFonts.option);
+if(data.questions.some(q=>q.source))requireFont(choiceFonts.source);
 const p=Presentation.create({slideSize:T.canvas}), mapping=[],reveal={slides:[]};
 const measure=(text,w,size,font=T.fonts.answer)=>height(text,w,{size,font,lineSpacing:1.25});
 await fs.mkdir(path.join(output,'previews'),{recursive:true});
@@ -18,13 +21,14 @@ for(const q of data.questions){
   const id=`${q.id}-choice-1`;
   shape(s,'line',40,78,1200,0,{name:`${id}-rule`,color:T.colors.border,width:1});
   put(s,'随堂辨析',40,25,180,{size:28,bold:true,color:T.colors.prompt,name:`${id}-heading`});
-  if(q.source) put(s,q.source,245,34,985,{size:18,color:'#596873',name:`${id}-source`});
   let stemSize=32,optionSize=28,stemH,heights,layouts;
+  const sourcePrefix=q.source?(/^[（(【]/u.test(q.source)?q.source:`（${q.source}）`):'';
+  const stemSegments=()=>[...(sourcePrefix?[{text:sourcePrefix+' ',size:stemSize,font:choiceFonts.source}]:[]),{text:q.stem,size:stemSize,font:T.fonts.material}];
   const labels={'false':'表述错误','unsupported':'不合题意'};
   const diagnostic=o=>`〔${labels[o.verdict]}〕${o.diagnostic}`;
   function rowLayout(o){
-    const text=`${o.key}  ${o.text}`,natural=textWidth(text,{size:optionSize,font:T.fonts.material});
-    const optionH=measure(text,1180,optionSize,T.fonts.material);
+    const text=`${o.key}  ${o.text}`,natural=textWidth(text,{size:optionSize,font:choiceFonts.option});
+    const optionH=measure(text,1180,optionSize,choiceFonts.option);
     if(o.verdict==='supported')return {height:optionH};
     const dx=48+natural+24,dw=1230-dx;
     const inline=dw>=300 && optionH<=optionSize*1.25+9;
@@ -33,17 +37,17 @@ for(const q of data.questions){
     return {x,w,dy,height:Math.max(optionH,dy+noteH),inline};
   }
   function fit(){
-    stemH=measure(q.stem,1190,stemSize,T.fonts.material);
+    stemH=segmentHeight(stemSegments(),1190,{size:stemSize,lineSpacing:1.25});
     layouts=q.options.map(rowLayout);heights=layouts.map(r=>r.height);
     return 108+stemH+28+heights.reduce((a,b)=>a+b,0)+3*18<=590;
   }
   while(!fit()&&(stemSize>28||optionSize>26)){if(stemSize>28)stemSize--;else optionSize--;}
   if(!fit()) throw Error(`${q.id}: text exceeds readable choice layout; revise concise diagnostics or supply a justified extended layout, never truncate source`);
-  put(s,q.stem,40,108,1190,{size:stemSize,font:T.fonts.material,lineSpacing:1.25,name:`${id}-stem`});
+  putSegments(s,stemSegments(),40,108,1190,{size:stemSize,lineSpacing:1.25,name:`${id}-stem`});
   let y=108+stemH+28;
   const steps=[[`${id}-answer`]],spare=590-(y+heights.reduce((a,b)=>a+b,0)+3*18),rowGap=18+Math.min(18,spare/3);
   for(const [i,o] of q.options.entries()){
-    put(s,`${o.key}  ${o.text}`,48,y,1180,{size:optionSize,font:T.fonts.material,lineSpacing:1.25,name:`${id}-option-${i}`});
+    put(s,`${o.key}  ${o.text}`,48,y,1180,{size:optionSize,font:choiceFonts.option,lineSpacing:1.25,name:`${id}-option-${i}`});
     if(o.verdict!=='supported'){
       const color=o.verdict==='false'?'#B42318':T.colors.prompt;
       const box=layouts[i];
@@ -52,7 +56,7 @@ for(const q of data.questions){
     }
     y+=heights[i]+rowGap;
   }
-  if(q.combinations) put(s,q.combinations.map(c=>`${c.key}．${c.members.join('')}`).join('     '),48,616,920,{size:28,font:T.fonts.material,name:`${id}-combinations`});
+  if(q.combinations) put(s,q.combinations.map(c=>`${c.key}．${c.members.join('')}`).join('     '),48,616,920,{size:28,font:choiceFonts.option,name:`${id}-combinations`});
   put(s,`答案  ${q.answer}`,1020,640,220,{size:30,bold:true,color:T.colors.prompt,name:`${id}-answer`});
   // Detailed reasoning stays out of the projected text and remains available for review.
   s.speakerNotes.textFrame.setText([`来源：${q.source||'自编训练，非真题'}`,`点击1显示答案；之后按选项顺序显示纠错旁注。`,...q.options.map(o=>`${o.key}：${o.reason}`)].join('\n'));

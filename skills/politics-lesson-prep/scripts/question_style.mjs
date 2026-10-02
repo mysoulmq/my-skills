@@ -21,6 +21,7 @@ theme.colors.border=role('question.border.2').lineColor;
 theme.type.prompt=role('question.prompt.2').size;
 theme.material.fontSize=role('question.material.2').size;
 for(const family of new Set(Object.values(theme.fonts)))if(!GlobalFonts.families.some(f=>f.family===family))throw Error(`Missing required question font: ${family}; load its licensed font file before rendering`);
+export function requireFont(family){if(!GlobalFonts.families.some(f=>f.family===family))throw Error(`Missing required font: ${family}; load its licensed font file before rendering`);}
 const ctx=createCanvas(2,2).getContext('2d');
 function glyphs(str,{size=24,font=theme.fonts.answer,bold=false,color=theme.colors.ink,focus=[],contrast=[],emphasis=[]}={}){
   for(const word of [...focus,...contrast,...emphasis])if(!word||!str.includes(word))throw Error(`Visual mark absent from text: ${word}`);
