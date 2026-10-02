@@ -112,3 +112,5 @@ render.mjs 生成 candidate.pptx、previews/、coverage.json 和 reveal-plan.jso
 正文默认 `spacingProfile:"comfortable"`（deck级，可由单页覆盖）；只有保留人工精调距离时用 `preserve`。渲染器按实际字体换行测量本页全部板块，再应用段落2/3/4/更多项的44/36/28/24px目标间距、分支48px、少量板块前留白。空间不足时只按比例收回新增间距，不缩字号、不改原文、不改页序；已有内容本身超高仍报告溢出。整课首页与知识脑图不套正文预设。
 
 默认不再为每页写试探性的 `gap/before/after`。有语义依据的自定义间距仍作为基线，`layout-review.json` 的 `content-spacing` 记录基线、目标、最终高度及分配比例。仅失败页或明显不均衡页需人工/模型复核；不能重复调用模型计算像素。参数保留在模板脚本，不把第五课题名、页码或原文写入通用规则。
+
+导航页必填来源门禁：`source.curriculumOutline:[{frameRef:"frame1",topicRefs:["topic1"],verified:true,evidence:{image:"输入图片路径",region:"教材目标题所在区域"}}]`。字段仅在独立读图确认教材层级后核定；不能从deck反向自动生成。knowledge-map.groups的title及topics.title必须完整引用核定ID并保持归属顺序；样式可以改，标题不可摘要替换。讲义整理栏目降为目下知识点，不以其编号认定教材目。详见teaching-map.md。

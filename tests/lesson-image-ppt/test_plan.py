@@ -39,4 +39,30 @@ class PlanTests(unittest.TestCase):
         self.deck['slides'][0]['type']='knowledge-map'
         self.assertFalse(PLAN.check(self.source,self.deck)['passed'])
 
+class CurriculumTests(unittest.TestCase):
+    def setUp(self):
+        self.source = {'units': [{'id': 'f', 'kind': 'heading', 'text': '第一框'},
+                                 {'id': 't', 'kind': 'heading', 'text': '教材目标题'},
+                                 {'id': 'column', 'kind': 'heading', 'text': '怎么做'}],
+                       'knowledgeGroups': [{'id': 'g', 'members': ['t']}],
+                       'curriculumOutline': [{'frameRef': 'f', 'topicRefs': ['t'], 'verified': True,
+                                              'evidence': {'image': 'input.jpg', 'region': 'upper heading'}}]}
+        self.deck = {'slides': [{'type': 'knowledge-map', 'groups': [
+            {'title': 'f', 'topics': [{'title': 't', 'leaves': []}]}]},
+            {'type': 'content', 'title': 't', 'blocks': []}]}
+    def test_verified_titles_pass(self):
+        self.assertTrue(PLAN.check(self.source, self.deck)['passed'])
+    def test_handout_column_cannot_replace_topic(self):
+        self.deck['slides'][0]['groups'][0]['topics'][0]['title'] = 'column'
+        self.assertFalse(PLAN.check(self.source, self.deck)['passed'])
+    def test_missing_image_verification_fails(self):
+        self.source.pop('curriculumOutline')
+        self.assertFalse(PLAN.check(self.source, self.deck)['passed'])
+    def test_reworded_title_fails(self):
+        self.deck['slides'][0]['groups'][0]['topics'][0]['title'] = {'ref': 't', 'quote': '目标题'}
+        self.assertFalse(PLAN.check(self.source, self.deck)['passed'])
+    def test_missing_topic_fails(self):
+        self.deck['slides'][0]['groups'][0]['topics'] = []
+        self.assertFalse(PLAN.check(self.source, self.deck)['passed'])
+
 if __name__=='__main__':unittest.main()

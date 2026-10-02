@@ -28,6 +28,49 @@ def check(source, deck):
             if key in slide: walk(slide[key], i, key)
         for j, block in enumerate(slide.get('blocks', [])):
             walk(block, i, f'blocks[{j}]')
+    # Heading text appearing in the image does not establish its curriculum level.
+    maps = [(i, slide) for i, slide in enumerate(deck['slides'], 1)
+            if slide.get('type') in ('knowledge-map', 'overview')]
+    if maps:
+        outline = source.get('curriculumOutline', [])
+        approved = {}
+        for entry in outline:
+            evidence = entry.get('evidence', {})
+            frame, topics = entry.get('frameRef'), entry.get('topicRefs', [])
+            if (entry.get('verified') is not True or not evidence.get('image')
+                    or not evidence.get('region') or frame not in units
+                    or frame in approved or not topics or len(topics) != len(set(topics))
+                    or any(t not in units for t in topics)):
+                errors.append('Invalid curriculumOutline: verified image evidence and unique frame/topic refs required')
+                continue
+            approved[frame] = topics
+        if not approved:
+            errors.append('Navigation requires image-verified curriculumOutline; handout headings are not automatically textbook topic titles')
+        def full_ref(value):
+            if isinstance(value, str):
+                return value if value in units else None
+            if isinstance(value, dict) and value.get('ref') in units:
+                ref = value['ref']
+                # Styling is allowed; replacing/truncating a curriculum title is not.
+                norm = lambda t: ''.join(t.split())
+                for field in ('text', 'quote'):
+                    if field in value and norm(value[field]) != norm(units[ref]['text']):
+                        return None
+                return ref
+            return None
+        for page, slide in maps:
+            if slide.get('type') == 'overview':
+                errors.append(f'Page {page}: legacy overview must migrate to curriculum-verified knowledge-map')
+                continue
+            frames = []
+            for group in slide.get('groups', []):
+                frame = full_ref(group.get('title')); frames.append(frame)
+                topics = [full_ref(t.get('title')) for t in group.get('topics', [])]
+                if frame not in approved or topics != approved.get(frame):
+                    errors.append(f'Page {page}: frame {frame} topic titles/order differ from verified curriculumOutline')
+            if frames != list(approved):
+                errors.append(f'Page {page}: frame titles/order differ from verified curriculumOutline')
+
     groups = source.get('knowledgeGroups', [])
     if not groups:
         errors.append('Declare source.knowledgeGroups before planning slides')
