@@ -10,5 +10,7 @@ test('document answer cannot bypass content review',()=>{const q=question();dele
 test('unresolved disagreement is blocked even if combination matches',()=>{const q=question();q.review.status='unresolved';assert.throws(()=>validateChoice(q),/disputed/);});
 test('lack of material support cannot become a false proposition',()=>{const q=question();q.options[2].verdict='false';assert.throws(()=>validateChoice(q),/distinct/);});
 test('invented evidence is blocked',()=>{const q=question();q.options[0].judgment.evidenceQuotes=['原材料丙'];assert.throws(()=>validateChoice(q),/exact stem/);});
-test('reference answer changes require an explicit resolution',()=>{const q=question();q.reference.answer='B';assert.throws(()=>validateChoice(q),/reasoned resolution/);q.review.answerChangeReason='原解析错把无证据当成立，已逐项论证';assert.doesNotThrow(()=>validateChoice(q));});
+test('reference answer changes require an explicit resolution',()=>{const q=question();q.reference.answer='B';assert.throws(()=>validateChoice(q),/reasoned resolution/);q.review.answerChangeReason='原解析错把无证据当成立，已逐项论证';assert.throws(()=>validateChoice(q),/evidence-backed/);q.review.corrections=[{before:'B',after:'A',reason:'原题明确支持A',evidence:[{type:'original-item',locator:'fixture / 材料甲',excerpt:'原材料甲'}]}];assert.doesNotThrow(()=>validateChoice(q));});
 test('missing source text does not imply self-authored question',()=>{const q=question();delete q.origin;assert.throws(()=>validateChoice(q,{requireReview:true}),/origin/);});
+
+test('model preference cannot serve as correction authority',()=>{const q=question();q.review.corrections=[{before:'原解释',after:'改解释',reason:'更专业',evidence:[{type:'model-opinion',locator:'模型判断',excerpt:'我认为更好'}]}];assert.throws(()=>validateChoice(q),/actual curriculum/);});

@@ -11,6 +11,13 @@ export function validateChoiceReview(q) {
   const r=q.review;
   if(r?.status!=='passed'||!filled(r.conclusion))fail('unresolved or missing content review; do not release a disputed answer');
   if(q.origin==='document'&&q.reference.answer!==null&&q.reference.answer!==q.answer&&!filled(r.answerChangeReason))fail('answer differs from source without a reasoned resolution');
+  const corrections=r.corrections??[];
+  if(!Array.isArray(corrections))fail('corrections must be an array');
+  for(const c of corrections){
+    if(!filled(c.before)||!filled(c.after)||!filled(c.reason)||!Array.isArray(c.evidence)||!c.evidence.length)fail('substantive correction needs original, revision and verifiable evidence');
+    if(c.evidence.some(e=>!['textbook','curriculum','official-exam','original-item'].includes(e.type)||!filled(e.locator)||!filled(e.excerpt)))fail('correction evidence must identify an actual curriculum/textbook/exam/item passage');
+  }
+  if(q.origin==='document'&&q.reference.answer!==null&&q.reference.answer!==q.answer&&!corrections.some(c=>c.before===q.reference.answer&&c.after===q.answer))fail('changed answer needs a matching evidence-backed correction');
   for(const o of q.options){
     const j=o.judgment;
     if(!j||!['true','false'].includes(j.statement)||!['supported','absent'].includes(j.materialSupport)||!filled(j.basis))fail(`option ${o.key} needs separate statement/material judgments and reasoning`);

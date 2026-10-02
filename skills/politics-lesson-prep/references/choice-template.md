@@ -4,7 +4,7 @@
 
 初始状态只显示题文、选项及组合。第1次点击显示右下角“答案＋字母”，使用40px（30磅）红色#C00000加粗，比选项正文明显更大；随后按选项顺序逐条显示错误/不合题意选项的旁注，解析整句一次出现，不用远离选项的竖线制造对应。表述错误用克制的深红色，说明最小改正；正确但材料不支持用蓝色，说明缺少的证据，不能标成知识错误。正确选项默认不加正文解析，依据放备注。旁注通常一句、1—2行，最长36字；不以自动截断代替内容精简。长题测量超限时回到版式规划，不能任意缩字或删题文。
 
-正式渲染前按[内容加工与教研验收](content-review.md)完成独立作答与原解析对照。
+正式渲染前按[内容加工与教研验收](content-review.md)完成基于教材的原题与参考解析核查。
 
 输入 `{questions:[...]}`，每题含id、stem（原题干及设问）、source（仅按输入题目文档原有题源填写；没有则省略）、options、answer。options恰有4项，每项含key、text、verdict（supported/false/unsupported）、reason（完整审核依据）；不采用项另含diagnostic（投影短旁注），可选diagnosticFocus（旁注内需加粗的原词数组）。组合题另有combinations：4个`{key:"A",members:["①","③"]}`之类的选项组合；非组合题options的key即A—D。reason必须独立判断陈述正误、设问范围与材料支持，再定答案。程序只核对组合一致和唯一性，不证明学科判断正确。
 
@@ -16,3 +16,5 @@ source只取输入题目文档明确给出的题源，按原文保留年份、�
 
 
 发布审核字段：origin为document或authored，不能因没有题源就判authored。document题的reference含locator（原文件/题号）、answer与explanation（原文，没有则显式null）；原参考答案与加工后的answer分开。review含status（passed/unresolved）、conclusion；改变原答案时另含answerChangeReason。每个option.judgment含statement（true/false字符串）、materialSupport（supported/absent）、basis（具体推理）、evidenceQuotes（题干原句数组；入选项必须有引用）。存在不确定判断时review为unresolved，不能强行填确定值通过验收。只有完成学科复核后才标passed。validateChoice默认兼容仅结构检查，正式render_choices始终传requireReview:true，不得绕过来发布有争议的题。
+
+学科纠正另记review.corrections数组，每项含before、after、reason和evidence；evidence为{type,locator,excerpt}数组，类型及依据边界见content-review.md。只有等义压缩时不强制查引整本教材；不得把未经教材/原题依据验证的改写包装为纠错。改变原答案必须有对应的纠正记录，不能仅填answerChangeReason的自我解释。
