@@ -9,11 +9,11 @@ const [input,output]=process.argv.slice(2);
 if(!output) throw Error('Usage: render_choices.mjs choices.json output-directory');
 const {Presentation,PresentationFile}=await import(pathToFileURL(path.join(process.env.LESSON_NODE_MODULES,'@oai/artifact-tool/dist/artifact_tool.mjs')));
 const data=JSON.parse(await fs.readFile(input,'utf8'));
-const choiceFonts={source:'LiSu',option:'SimSun'};
+const choiceFonts={source:'KaiTi',option:'SimSun'};
 requireFont(choiceFonts.option);
 const sourceFontLocallyVerified=hasFont(choiceFonts.source);
-// The user targets Windows LiSu: retain the exact font even when local previews substitute it.
-if(data.questions.some(q=>q.source)&&!sourceFontLocallyVerified)console.warn('LiSu is not installed locally; exported source font remains LiSu, local preview/metrics are unverified.');
+// Keep the requested source typeface; font availability is recorded separately.
+if(data.questions.some(q=>q.source)&&!sourceFontLocallyVerified)console.warn('KaiTi is not installed locally; source font preview/metrics are unverified.');
 const p=Presentation.create({slideSize:T.canvas}), mapping=[],reveal={slides:[]};
 const measure=(text,w,size,font=T.fonts.answer)=>height(text,w,{size,font,lineSpacing:1.25});
 await fs.mkdir(path.join(output,'previews'),{recursive:true});
@@ -25,7 +25,7 @@ for(const q of data.questions){
   put(s,'随堂辨析',40,25,180,{size:28,bold:true,color:T.colors.prompt,name:`${id}-heading`});
   let stemSize=32,optionSize=28,stemH,heights,layouts;
   const sourcePrefix=q.source?(/^[（(【]/u.test(q.source)?q.source:`（${q.source}）`):'';
-  const stemSegments=()=>[...(sourcePrefix?[{text:sourcePrefix+' ',size:stemSize,font:choiceFonts.source}]:[]),{text:q.stem,size:stemSize,font:T.fonts.material}];
+  const stemSegments=()=>[...(sourcePrefix?[{text:sourcePrefix+' ',size:stemSize-8/3,font:choiceFonts.source,bold:true,color:'#404040'}]:[]),{text:q.stem,size:stemSize,font:T.fonts.material}];
   const labels={'false':'表述错误','unsupported':'不合题意'};
   const diagnostic=o=>`〔${labels[o.verdict]}〕${o.diagnostic}`;
   function rowLayout(o){

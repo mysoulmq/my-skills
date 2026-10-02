@@ -33,7 +33,7 @@ function glyphs(str,{size=24,font=theme.fonts.answer,bold=false,color=theme.colo
     const highlighted=hi.some(([a,b])=>offset>=a&&offset<b),marked=red.some(([a,b])=>offset>=a&&offset<b);offset+=ch.length;
     ctx.font=`${bold||marked||strong?'bold ':''}${size}px "${font}"`;
     const width=ctx.measureText(ch).width;
-    glyphs.push({ch,width,run:ch,textStyle:{typeface:font,bold:bold||marked||strong,color:marked?theme.colors.contrast:color,...(highlighted?{highlight:theme.colors.highlight}:{})}});
+    glyphs.push({ch,width,run:ch,textStyle:{typeface:font,fontSize:`${size}px`,bold:bold||marked||strong,color:marked?theme.colors.contrast:color,...(highlighted?{highlight:theme.colors.highlight}:{})}});
   }
   return glyphs;
 }
