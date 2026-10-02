@@ -6,7 +6,7 @@
 
 正式渲染前按[内容加工与教研验收](content-review.md)完成基于教材的原题与参考解析核查。
 
-输入 `{questions:[...]}`，每题含id、stem（原题干及设问）、source（仅按输入题目文档原有题源填写；没有则省略）、options、answer。options恰有4项，每项含key、text、verdict（supported/false/unsupported）、reason（完整审核依据）；不采用项另含diagnostic（不含前缀的投影短旁注）、可选diagnosticLabel（表述错误/不合题意；不适用时省略或为空），可选diagnosticFocus（旁注内需加粗的原词数组）。组合题另有combinations：4个`{key:"A",members:["①","③"]}`之类的选项组合；非组合题options的key即A—D。reason必须独立判断陈述正误、设问范围与材料支持，再定答案。程序只核对组合一致和唯一性，不证明学科判断正确。
+输入 `{questions:[...]}`，每题含id、stem（原题干及设问）、source（仅按输入题目文档原有题源填写；没有则省略）、options、answer。options恰有4项，每项含key、text、verdict（supported/false/unsupported）、reason（完整审核依据）；不采用项另含diagnostic（不含前缀的投影短旁注）、可选diagnosticLabel（表述错误/不合题意；不适用时省略或为空），可选diagnosticFocus（旁注内需加粗的原词数组）。组合题另有combinations：4个`{key:"A",members:["①","③"]}`之类的选项组合；非组合题options的key即A—D。reason优先保留原解析中该项的依据；核对陈述正误、设问范围与材料支持，不要求重新独立生成一套理由。程序只核对组合一致和唯一性，不证明学科判断正确。
 
 运行 `scripts/render_choices.mjs choices.json output-dir`，字体环境除综合题字体外，须加载合法本机宋体SimSun；来源使用楷体KaiTi；运行级字号必须写入PPT的文本run，不能只在测量时缩小。记录sourceFontLocallyVerified，不把替代字体预览当作目标字形验收；读取统一teaching-template.pptx的题文/提示字体及蓝色。输出candidate.pptx、slides.json、reveal-plan.json和预览。必须再调用依赖的add_reveals.py写入原生点击动画，candidate本身未注入动画，不能直接当成可播放成品。最终核对答案和每条旁注初始隐藏、按序可达、原题始终可见，WPS未实测时如实记录。
 
@@ -20,3 +20,5 @@ source只取输入题目文档明确给出的题源，按原文保留年份、�
 学科纠正另记review.corrections数组，每项含before、after、reason和evidence；evidence为{type,locator,excerpt}数组，类型及依据边界见content-review.md。只有等义压缩时不强制查引整本教材；不得把未经教材/原题依据验证的改写包装为纠错。改变原答案必须有对应的纠正记录，不能仅填answerChangeReason的自我解释。
 
 解析前缀按语义选用：确属表述错误时写〔表述错误〕，确属不合题意时写〔不合题意〕；不符合这两类时默认不写前缀，直接给具体解释。不扩大成新的封闭标签库，不为套标签改变判断。内容审核时明确适用标签；渲染器只读取显式diagnosticLabel，缺省无前缀，不从verdict强制推导。带前缀与不带前缀共用测量、布局及动画流程。
+
+教学性呈现与实质补写的边界见content-review.md。必要补写使用teachingAdditions数组，每项含content、reason、basis（具体出处或材料依据）；渲染器将其与review.corrections一起写入对应页备注，不把补写冒充原解析。无实质补写时省略该字段。

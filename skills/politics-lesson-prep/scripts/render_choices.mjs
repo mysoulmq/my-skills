@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {validateChoice,choiceDiagnosticText} from './choice_contract.mjs';
+import {choiceNotes} from './choice_notes.mjs';
 import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont,hasFont} from './question_style.mjs';
 import {writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 const [input,output]=process.argv.slice(2);
@@ -60,7 +61,7 @@ for(const q of data.questions){
   if(q.combinations) put(s,q.combinations.map(c=>`${c.key}．${c.members.join('')}`).join('     '),48,616,920,{size:28,font:choiceFonts.option,name:`${id}-combinations`});
   put(s,`答案  ${q.answer}`,1000,632,240,{size:40,bold:true,color:'#C00000',name:`${id}-answer`});
   // Detailed reasoning stays out of the projected text and remains available for review.
-  s.speakerNotes.textFrame.setText([...(q.source?[`来源：${q.source}`]:[]),`点击1显示答案；之后按选项顺序显示纠错旁注。`,...q.options.map(o=>`${o.key}：${o.reason}`)].join('\n'));
+  s.speakerNotes.textFrame.setText(choiceNotes(q));
   mapping.push({id,questionId:q.id,kind:'choice',stage:'teaching',sourceSlide:s._lessonNumber,clicks:steps});
   reveal.slides.push({slide:s._lessonNumber,steps});
 }
