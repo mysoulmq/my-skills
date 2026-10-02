@@ -35,6 +35,7 @@ function glyphs(str,{size=24,font=theme.fonts.answer,bold=false,color=theme.colo
   }
   return glyphs;
 }
+export const textWidth=(str,opts={})=>glyphs(str,opts).reduce((n,g)=>n+g.width,0);
 export function rows(str,w,opts={}){
   return wrapGlyphs(glyphs(str,opts),w-8).map(row=>row.map(({ch,width,...run})=>run));
 }
