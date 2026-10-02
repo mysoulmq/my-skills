@@ -32,8 +32,8 @@ for(const q of data.questions){
     const text=`${o.key}  ${o.text}`,natural=textWidth(text,{size:optionSize,font:choiceFonts.option});
     const optionH=measure(text,1180,optionSize,choiceFonts.option);
     if(o.verdict==='supported')return {height:optionH};
-    const dx=48+natural+24,dw=1230-dx;
-    const inline=dw>=300 && optionH<=optionSize*1.25+9;
+    const dx=48+natural+48,dw=1230-dx;
+    const inline=dw>=400 && optionH<=optionSize*1.25+9;
     const x=inline?dx:88,w=inline?dw:1130,dy=inline?3:optionH+6;
     const noteH=measure(diagnostic(o),w,21);
     return {x,w,dy,height:Math.max(optionH,dy+noteH),inline};
