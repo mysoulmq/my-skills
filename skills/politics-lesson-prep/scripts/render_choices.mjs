@@ -2,7 +2,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
-import {validateChoice} from './choice_contract.mjs';
+import {validateChoice,choiceDiagnosticText} from './choice_contract.mjs';
 import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont,hasFont} from './question_style.mjs';
 import {writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 const [input,output]=process.argv.slice(2);
@@ -26,8 +26,7 @@ for(const q of data.questions){
   let stemSize=32,optionSize=28,stemH,heights,layouts;
   const sourcePrefix=q.source?(/^[（(【]/u.test(q.source)?q.source:`（${q.source}）`):'';
   const stemSegments=()=>[...(sourcePrefix?[{text:sourcePrefix+' ',size:stemSize-8/3,font:choiceFonts.source,bold:true,color:'#404040'}]:[]),{text:q.stem,size:stemSize,font:T.fonts.material}];
-  const labels={'false':'表述错误','unsupported':'不合题意'};
-  const diagnostic=o=>`〔${labels[o.verdict]}〕${o.diagnostic}`;
+  const diagnostic=choiceDiagnosticText;
   function rowLayout(o){
     const text=`${o.key}  ${o.text}`,natural=textWidth(text,{size:optionSize,font:choiceFonts.option});
     const optionH=measure(text,1180,optionSize,choiceFonts.option);

@@ -8,6 +8,7 @@ export function validateChoice(q, {requireReview=false}={}) {
   for (const o of q.options) {
     if (!o.text?.trim() || !o.reason?.trim() || !['supported','false','unsupported'].includes(o.verdict))
       throw Error(`${q.id}: each option needs text, verdict and full reason`);
+    choiceDiagnosticText(o);
     if (o.verdict!=='supported' && (!o.diagnostic?.trim() || [...o.diagnostic].length>36))
       throw Error(`${q.id}: rejected options need a concise diagnostic (max 36 characters)`);
   }
@@ -21,4 +22,12 @@ export function validateChoice(q, {requireReview=false}={}) {
     const matches=q.combinations.filter(c=>[...c.members].sort().join('|')===accepted.join('|'));
     if(matches.length!==1 || matches[0].key!==q.answer) throw Error(`${q.id}: answer not uniquely supported by option judgments`);
   } else if(accepted.length!==1 || accepted[0]!==q.answer) throw Error(`${q.id}: answer not uniquely supported`);
+}
+
+// A display label is an explicit teaching decision, not an automatic verdict alias.
+export function choiceDiagnosticText(option) {
+  const label=option.diagnosticLabel??'';
+  if(!['','表述错误','不合题意'].includes(label)) throw Error('Invalid diagnosticLabel; omit it when neither label fits');
+  if((label==='表述错误'&&option.verdict!=='false')||(label==='不合题意'&&option.verdict!=='unsupported')) throw Error('diagnosticLabel contradicts the reviewed option judgment');
+  return `${label?`〔${label}〕`:''}${option.diagnostic??''}`;
 }
