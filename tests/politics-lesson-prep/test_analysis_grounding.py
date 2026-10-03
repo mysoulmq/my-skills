@@ -10,6 +10,7 @@ class GroundingTest(unittest.TestCase):
             {'evidence':'事实甲','evidenceDisplay':'事实甲','principle':'理论命题甲。','knowledgeRefs':[{'unitId':'u1','quote':'理论命题甲。'}],'answerRefs':[1]},
             {'evidence':'事实乙','evidenceDisplay':'事实乙','principle':'理论命题乙。','knowledgeRefs':[{'unitId':'u2','quote':'理论命题乙。'}],'answerRefs':[2]}]}]}
         q=self.data['questions'][0]
+        q['teachingFocus']='说明事实甲乙如何支持设问对象。'
         q['referenceAnswer']='理论命题甲。理论命题乙。'
         q['referenceExplanation']='事实甲对应理论命题甲。事实乙对应理论命题乙。'
         for a in q['analysis']:
@@ -25,6 +26,9 @@ class GroundingTest(unittest.TestCase):
         for a in q['analysis']:a['referenceTrace'].update(mode='answer-only',explanationQuote='')
         self.assertEqual(m.check(self.data,self.source),[])
     def test_valid(self):self.assertEqual(m.check(self.data,self.source),[])
+    def test_missing_question_focus(self):
+        self.data['questions'][0].pop('teachingFocus')
+        self.assertTrue(any('teachingFocus' in e for e in m.check(self.data,self.source)))
     def test_application_cannot_replace_knowledge(self):
         self.data['questions'][0]['analysis'][0]['principle']='现实需要得到满足'
         self.assertTrue(any('preserve cited' in e for e in m.check(self.data,self.source)))

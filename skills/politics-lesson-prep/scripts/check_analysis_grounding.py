@@ -22,6 +22,8 @@ def check(data, source):
     if not data.get('questions'):
         errors.append('No questions supplied for source-backed analysis review')
     for q in data.get('questions', []):
+        if not norm(q.get('teachingFocus', '')):
+            errors.append(q['id'] + ': missing teachingFocus: identify what the question asks students to explain before selecting material')
         if not q.get('analysis') or not q.get('answer'):
             errors.append(q['id'] + ': missing analysis or answer points')
             continue

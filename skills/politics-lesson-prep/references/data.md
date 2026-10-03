@@ -35,4 +35,8 @@
 
 `sourceLabel`与自拟`title`分开：必须原样保留原题出处，不编造，不把概括性题名当成出处。原生模板适配也必须将题源放在材料前，采用既定题源字体层次，并在本题分析/答案各页保留。题源较长需要换行时，给其实际空间，不缩成难读的一行。
 
-分析呈现另含`responseAnchor`（回应本题的关键联系在屏幕材料概括中的精确短语）及必要时的`responseDisplay`（从原答案/详解提炼的短回应，追加在原材料概括框）。已有evidenceDisplay表达充分则不重复追加。由共享analysis_presentation.compile_display产生最终显示字符串；principleDisplay不得在渲染时替换完整知识命题。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId，供最终文件核对；语义审核不能由anchor包含检查替代。
+综合题另存`teachingFocus`：一句话写清设问要求解释的具体对象及任务，材料选择由此约束，不是通用题型标签。每条analysis的显示字段：
+- `evidenceDisplay`：审定的材料概括，保留本题关键变化、行为或条件，不自动追加答案结论。
+- `principle`：与knowledgeRefs一致的完整来源措辞，用于引用校验；可另设`principleDisplay`为审定的上屏知识短句，必须保留适用限定及关系，不能只留含混标签。未设则使用principle。
+- `displayAnchors:{material:[...],knowledge:[...]}`：内容复核时选定的不可丢表达（如变化的两端、关键限定与关系），必须出现在各自显示文本中。它们用于阻止后续排版压缩丢词，不证明选材或概括正确，不能由渲染器临时取任意子串凑齐。
+共享analysis_presentation.compile_display原样返回这两栏，不生成新讲法。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId。旧responseAnchor/responseDisplay接口停用：回原题、原解析重新审定材料，迁移到上述字段；不能仅改字段名、把旧答案式回应机械拼入材料，或删掉已有必要联系来过门禁。普通迁移自主完成，不询问用户。

@@ -34,8 +34,8 @@
 
 ## 必须执行的分析显示接口
 
-临时原生适配器不得自行只取evidenceDisplay/principleDisplay。每组先调用共享`analysis_presentation.compile_display(item)`，将返回的`material`和`knowledge`写入教师原有材料概括框与知识框，保留原箭头和区域，不新增“为什么”第三列。返回的material包含必要的简短回应设问语，knowledge保留所引用的完整知识命题；不再让principleDisplay短标签覆盖命题。若原命题过长，应在内容审定时选取完整、适用的原句，不能在渲染时截短。
+每组先调用共享`analysis_presentation.compile_display(item)`，将返回的`material`和`knowledge`写入教师原有材料概括框与知识框，保留原箭头和区域，不新增“为什么”第三列。material是审定的evidenceDisplay；knowledge是审定的principleDisplay（未设时取principle）。渲染器既不追加答案式回应，也不把知识短句强制扩回整段来源。引用原文与上屏短句分开；短句的保真、限定和设问焦点在排版前按teacher-material-selection.md复核。
 
-容量测量必须针对compile_display的实际输出，包含回应语、完整知识命题、行距和内边距。采用共享`analysis_presentation.paginate`，传实际可用高度与已测各组高度；禁止`len(groups)>1`、按固定题号或固定每页一点分割。空间不足允许语义续页，不能反向删掉回应或缩字。多组同页时每组对象使用唯一ID，动画逐组呈现；续页仍保留本题任务及必要知识关系。
+容量测量针对compile_display的实际输出、行距和内边距。采用共享`analysis_presentation.paginate`，传实际可用高度与已测各组高度。每组材料和知识从同一y开始，下一组按两栏中较高者＋组间距下移，箭头只连接本组；不能各栏独立累加高度导致错行。禁止固定每页一点或按题号分页。空间不足允许完整语义组续页，不能反向删掉关键表达或缩字。多组同页使用唯一对象ID，动画逐组呈现；续页保留本题任务及必要知识关系。
 
 每个分析页面在映射增加`analysisBlocks:[{analysisIndex:1,materialShapeId:14,knowledgeShapeId:17}]`（索引从1开始，ID取实际原生对象），组装到最终视图后回填实际页码。执行running.md的check_analysis_screen.py，缺失映射或未落盘的对应视为失败。没有这项检查，引用字段齐全和渲染无重叠均不能算完成。

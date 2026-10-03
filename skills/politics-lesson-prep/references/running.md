@@ -58,4 +58,4 @@
 
 原生与通用分析适配都要读取native-essay-template.md的共享显示接口。先对每组调用`analysis_presentation.compile_display`；基于其输出测量容量、分页、写入原有区域；用analysisBlocks记录实际对象ID。最终完整及题目视图均运行：
 `python check_analysis_screen.py final.pptx questions.json final-view-mapping.json --report analysis-screen.json`
-该门禁按实际播放页序与对象读取显示文字，拒绝只在底稿reason、备注或答案页中存在的联系；报告绑定当前文件哈希。缺responseAnchor时回内容加工，不能由渲染器自动用evidence的任意子串补齐。程序只验证审定表达传到了页面；原答案保真、回应设问和知识完整仍由语义复核实际页面，不宣称字符串检查能判定教学质量。
+该门禁按实际播放页序与对象读取显示文字，检查审定的材料概括与知识短句是否确实落在对应分析区；报告绑定当前文件哈希。缺teachingFocus/displayAnchors或遇到旧response字段时，自主回原资料修订相应内容后重导出，不能由渲染器取任意子串凑齐或把答案追加进材料栏。程序只验证引用与显示传递；另对实际页面逐组核对设问焦点、主依据、知识对应和概括保真，不能将字符串检查当教学验收。
