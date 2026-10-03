@@ -19,7 +19,14 @@ def check(data, source):
     units = {u['id']: u for u in source['units']}
     if len(units) != len(source['units']):
         errors.append('Duplicate knowledge unit IDs')
-    for q in data['questions']:
+    if not data.get('questions'):
+        errors.append('No questions supplied for source-backed analysis review')
+    for q in data.get('questions', []):
+        if not q.get('analysis') or not q.get('answer'):
+            errors.append(q['id'] + ': missing analysis or answer points')
+            continue
+        if not norm(q.get('referenceAnswer', '')):
+            errors.append(q['id'] + ': no reference answer; requires authored-answer review, not fabricated backtrace')
         covered = set()
         for i, item in enumerate(q.get('analysis', []), 1):
             label = f'{q["id"]}:analysis[{i}]'

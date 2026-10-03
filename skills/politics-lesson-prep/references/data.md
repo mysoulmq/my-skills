@@ -7,6 +7,13 @@
 `teaching`含 `ask`, `expected`, `misconception`, `followup`, `explanation`, `check`, `transition` 字符串；可用换行列出必要的多个步骤。不得用空话填满字段。answer 是可直接示范给学生的规范答案，审稿说明、证据强弱提示、参考答案纠错和“材料未交代”等元说明放在 teaching 或备注，不混入示范答案。
 `excluded`数组每项含`sourceQuestion`, `sourceSubquestion`, `reason`，仅记录用户明确要求排除的题目；课时不足、低相关性、同类重复或跨课配套问不能列入excluded，须保留题目与答案并以optional安排建议取舍。
 
+综合题的答案倒查复用上述字段，不另建第二套答案。保存`referenceExplanation`为原详解（原本缺失用null）；每条analysis另含：
+- `referenceTrace:{answerQuote,explanationQuote,mode}`：原答案/详解的实际摘录；mode为explanation-led或原本无详解时的answer-only。
+- `evidenceDisplay`：教师式材料精简；跨多个非连续片段另保存`evidenceQuotes`原句数组，不把拼接句伪装为连续原文。
+- `knowledgeRefs:[{unitId,quote}]`：引用本轮讲义units或有真实定位的补充教材资料；`principle`保留对应知识措辞。
+- `answerRefs:[1,...]`：对应规范答案点，可多材料对应同一点，也可关联多点；不规定点数，不从点数推定分值。
+这些字段用于`check_analysis_grounding.py`与语义复核。知识回看从已引用知识选取；方案、备注和揭示步骤复用相同对应。没有原答案时不能捏造这些来源字段来通过检查，应另做自拟答案的教学核验；不把来源校验器的通过当作无来源题的学科验收。
+
 教学计划 `teaching-plan.json`：`lesson`, `designRationale`（教学主线与关键安排理由）, `preparation`数组（教师课前需掌握的具体判断）, `goals`数组, `difficulties`数组, `periods`数组。
 每课时含 `title`, `quickCard`（`mainline`主线、`mustExplain`区别数组、`questions`问题数组、`timeChoice`取舍）, `activities` 数组；活动含 `id`, `title`, `minutes`, `kind`(`diagnosis`/`knowledge`/`question`/`recap`), `knowledgeTopics`(原稿小点标题数组), `questionIds`数组，以及上述`teaching`对象和`optional`布尔值。活动另含短句`cue`：`ask`, `explain`, `pitfall`, `followup`, `check`, `transition`，每项约35—50汉字，供课堂速查，不用泛泛指令代替具体辨析。每课时建议必讲活动总计40分钟；可选活动说明替换项目及用时，不全量累加。`optional`只表示教学取舍，不能据此设置幻灯片隐藏或添加投影标签；默认页面可见，选讲理由和接续页写入teaching、cue及相关页面备注。不把内容全塞进单课时。
 

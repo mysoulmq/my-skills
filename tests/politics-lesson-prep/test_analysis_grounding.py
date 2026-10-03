@@ -1,4 +1,3 @@
-import copy
 import importlib.util
 from pathlib import Path
 import unittest
@@ -38,4 +37,25 @@ class GroundingTest(unittest.TestCase):
     def test_material_added_fact(self):
         self.data['questions'][0]['analysis'][0]['evidence']='题目未写的事实'
         self.assertTrue(any('original material' in e for e in m.check(self.data,self.source)))
+    def test_multiple_material_groups_may_support_one_answer(self):
+        q=self.data['questions'][0];q['answer']=[{}]
+        for a in q['analysis']:a['answerRefs']=[1]
+        self.assertEqual(m.check(self.data,self.source),[])
+    def test_noncontiguous_material_kept_as_separate_quotes(self):
+        a=self.data['questions'][0]['analysis'][0]
+        a['evidenceQuotes']=['事实甲','事实乙']
+        a['evidenceDisplay']='事实甲与事实乙共同支持该点'
+        self.assertEqual(m.check(self.data,self.source),[])
+    def test_does_not_require_two_answer_points(self):
+        q=self.data['questions'][0]
+        q['answer']=[{}, {}, {}]
+        q['analysis'][1]['answerRefs']=[2,3]
+        self.assertEqual(m.check(self.data,self.source),[])
+    def test_empty_content_cannot_pass_by_empty_coverage(self):
+        q=self.data['questions'][0];q['answer']=[];q['analysis']=[]
+        self.assertTrue(any('missing analysis' in e for e in m.check(self.data,self.source)))
+        self.assertTrue(m.check({'questions':[]},self.source))
+    def test_absent_reference_answer_is_not_source_backed(self):
+        self.data['questions'][0]['referenceAnswer']=''
+        self.assertTrue(any('authored-answer review' in e for e in m.check(self.data,self.source)))
 if __name__=='__main__':unittest.main()
