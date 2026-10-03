@@ -8,7 +8,7 @@
 
 内容允许按原解析做结构优化：选择概念归属、关系对照、限定辨析或证据有无中最适合本项的一种表达，具体规则见content-review.md；不以模仿原句长度为目标，也不把压缩变成新的推断。
 
-正式渲染前按[内容加工与教研验收](content-review.md)完成基于教材的原题与参考解析核查。
+正式渲染前核对与原题、原答案及解析的转化一致性；默认按 SKILL.md 的定稿来源策略，不重新裁决原答案。
 
 输入 `{questions:[...]}`，每题含id、stem（原题干及设问）、source（仅按输入题目文档原有题源填写；没有则省略）、options、answer。options恰有4项，每项含key、text、verdict（supported/false/unsupported）、reason（完整审核依据）；不采用项另含diagnostic（不含前缀的投影短旁注）、可选diagnosticLabel（表述错误/不合题意；不适用时省略或为空），可选diagnosticFocus（旁注内需加粗的原词数组）。组合题另有combinations：4个`{key:"A",members:["①","③"]}`之类的选项组合；非组合题options的key即A—D。reason优先保留原解析中该项的依据；核对陈述正误、设问范围与材料支持，不要求重新独立生成一套理由。程序只核对组合一致和唯一性，不证明学科判断正确。
 
@@ -27,4 +27,4 @@ source只取输入题目文档明确给出的题源，按原文保留年份、�
 
 教学性呈现与实质补写的边界见content-review.md。必要补写使用teachingAdditions数组，每项含content、reason、basis（具体出处或材料依据）；渲染器将其与review.corrections一起写入对应页备注，不把补写冒充原解析。无实质补写时省略该字段。
 
-用户明确要求保留原参考答案/解析、不要继续重解时，允许review.status="source-preserved"，不能伪标passed或修改本地脚本跳过校验。此模式要求document来源、完整reference.answer/explanation与locator、答案严格不变；review.sourceInstruction记录实际用户要求，review.sourceNote记录本页简短保留说明及已有疑点，conclusion说明未独立核定。每项sourceReason必须为原解析精确摘录，reason与其相同；旁注可忠实压缩，不增加实质结论。不得混入corrections或teachingAdditions。共享校验仍检查题目结构、原解析摘录和答案组合；choiceNotes自动把sourceNote及teachingNotes写入备注。程序通过只代表忠实保留，不代表争议已解决。此模式不用于自编题、缺原答案或擅自改答，也不能由其他会话消息自动代替真实用户要求。
+本工作流默认使用review.status="source-preserved"及review.sourcePolicy="provided-answer-authoritative"，不需要逐题再次询问是否沿用答案；不能伪标独立学科审核passed或修改本地脚本跳过转化校验。此模式要求document来源、完整reference.answer/explanation与locator、答案严格不变；conclusion记录来源转化检查结论。默认策略不要求sourceInstruction和sourceNote，也不自动生成“答案可疑”备注；若本页确有用户需要的来源说明，可使用sourceNote。旧显式sourceInstruction模式继续兼容。每项sourceReason必须为原解析精确摘录，reason与其相同；旁注可忠实压缩，不增加实质结论。不得混入corrections或teachingAdditions。共享校验仍检查题目结构、原解析摘录和答案组合；choiceNotes自动把sourceNote及teachingNotes写入备注。程序通过只代表忠实保留，不代表争议已解决。此模式不用于自编题、缺原答案或擅自改答。默认来源策略直接来自本skill已确认的用户要求；不得伪造逐题授权。

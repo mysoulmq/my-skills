@@ -11,7 +11,8 @@ export function validateChoiceReview(q) {
   const r=q.review;
   if(r?.status==='source-preserved'){
     if(q.origin!=='document'||!filled(q.reference?.answer)||!filled(q.reference?.explanation))fail('source-preserved requires a document answer and explanation');
-    if(!filled(r.sourceInstruction)||!filled(r.sourceNote)||!filled(r.conclusion))fail('source-preserved requires the user instruction, slide note and conclusion');
+    const authoritative=r.sourcePolicy==='provided-answer-authoritative';
+    if(!filled(r.conclusion)||(!authoritative&&(!filled(r.sourceInstruction)||!filled(r.sourceNote))))fail('source-preserved requires the user instruction, slide note and conclusion, or the authoritative source policy');
     if(q.answer!==q.reference.answer)fail('source-preserved answer must match the original');
     if(!Array.isArray(r.corrections??[])||!Array.isArray(q.teachingAdditions??[])||(r.corrections??[]).length||(q.teachingAdditions??[]).length)fail('source-preserved cannot contain substantive corrections or additions');
     for(const o of q.options){

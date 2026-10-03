@@ -19,3 +19,11 @@ test('source preservation notice reaches notes without claiming approval',()=>{
  assert.ok(notes.includes('原解析保留：原解析有待核实'));
  assert.ok(notes.includes('讲：辨认限定。'));
 });
+
+test('default source policy does not add undefined or boilerplate doubt notes',()=>{
+ const q={review:{status:'source-preserved',sourcePolicy:'provided-answer-authoritative'},options:[],teachingNotes:['问：材料对应哪条依据？']};
+ const notes=choiceNotes(q);
+ assert.ok(notes.includes('材料对应'));
+ assert.ok(!notes.includes('undefined'));
+ assert.ok(!notes.includes('原解析保留'));
+});

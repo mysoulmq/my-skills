@@ -33,3 +33,15 @@ test('source preservation requires a full source and cannot carry new conclusion
  const q=sourceQuestion();q.reference.explanation=null;assert.throws(()=>validateChoice(q),/document answer and explanation/);
  const r=sourceQuestion();r.teachingAdditions=[{content:'new'}];assert.throws(()=>validateChoice(r),/substantive/);
 });
+
+test('authoritative source policy needs no repeated permission or doubt note',()=>{
+ const q=sourceQuestion();delete q.review.sourceInstruction;delete q.review.sourceNote;
+ q.review.sourcePolicy='provided-answer-authoritative';
+ assert.doesNotThrow(()=>validateChoice(q,{requireReview:true}));
+});
+test('authoritative source policy still rejects altered answers and invented explanations',()=>{
+ const q=sourceQuestion();q.review.sourcePolicy='provided-answer-authoritative';q.answer='B';
+ assert.throws(()=>validateChoice(q),/match the original/);
+ const r=sourceQuestion();r.review.sourcePolicy='provided-answer-authoritative';r.options[0].sourceReason='not in source';
+ assert.throws(()=>validateChoice(r),/exact reference excerpt/);
+});

@@ -9,7 +9,7 @@ export function choiceNotes(q) {
     `修正：${c.before}→${c.after}；原因：${c.reason}；依据：${c.evidence.map(e => e.locator).join('、')}`);
   return [
     ...(q.source ? [`来源：${q.source}`] : []),
-    ...(q.review?.status==='source-preserved' ? [`原解析保留：${q.review.sourceNote}`] : []),
+    ...(q.review?.status==='source-preserved' && q.review.sourceNote?.trim() ? [`原解析保留：${q.review.sourceNote}`] : []),
     ...(q.teachingNotes ?? []),
     ...extra, ...corrections,
     '点击1显示答案；之后按选项顺序显示纠错旁注。',
