@@ -1,5 +1,7 @@
 # 执行与验证
 
+先检查工作区 `.politics-lesson-prep/essay-template.json`；`native-reference` 模式下综合题走 [原生模板适配](native-essay-template.md)，跳过下文通用 `render_questions.mjs` 生成步骤；仍执行覆盖、动画、映射、方案和视觉验收。模板配置不是可选装饰参数。
+
 先通过 `load_workspace_dependencies` 定位捆绑 Node/Python 与依赖。按 lesson-image-ppt 的 runtime-and-schema 设置 `LESSON_NODE_MODULES`、`LESSON_FONT_FILES`、`LESSON_PYTHON`；字体来自本机合法安装，不打包进入skill。
 
 用 `check_dependency.py --workspace /absolute/workspace --record private-build/dependency.json` 检查并记录实际依赖。依赖版本必须包含知识组校验脚本 check_plan.py；仓库旧版或另一个安装副本不一定具备此接口，不凭技能同名假定版本满足要求。

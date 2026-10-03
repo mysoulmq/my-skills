@@ -1,3 +1,4 @@
+import {assertGenericRendererAllowed} from './essay_template_contract.mjs';
 import {role,gap,writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -5,6 +6,7 @@ import {pathToFileURL} from 'node:url';
 import {theme as T,put,putSegments,height,segmentHeight,shape,brace,arrow} from './question_style.mjs';
 const [input,dependency,output,sequenceFile,planFile]=process.argv.slice(2);
 if(!output)throw Error('Usage: render_questions.mjs questions.json dependency-dir output sequence.json plan.json [--layout-only]');
+assertGenericRendererAllowed({input});
 const layoutOnly=process.argv.includes('--layout-only');
 const {Presentation,PresentationFile}=await import(pathToFileURL(path.join(process.env.LESSON_NODE_MODULES,'@oai/artifact-tool/dist/artifact_tool.mjs')));
 const data=JSON.parse(await fs.readFile(input,'utf8'));

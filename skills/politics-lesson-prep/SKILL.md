@@ -13,6 +13,10 @@ description: Use when preparing a complete senior-high politics lesson from hand
 
 按题型分别处理：综合题以模仿授课教师的内容与表达路径为主，优先进化视觉强调；选择题允许依据原解析优化概念对应、比较和短旁注。具体优先级与两类题的讲解路径见[教师习惯优先](references/content-review.md#教师习惯优先)。不得把模型偏好的表格、追问流程或新概括当作更高级的讲法替换人工样本；最新用户要求优先于旧样本，事实与学科错误仍须纠正。
 
+## 用户指定的原生综合题模板
+
+生成综合题前先检查工作区 `.politics-lesson-prep/essay-template.json`。若存在 `mode: native-reference`，必须执行[原生综合题模板](references/native-essay-template.md)：直接复制该 PPT 的分析页／答案页并就地替换内容，保留原布局、字体、配色和图形；这是对后文通用题目渲染路径的优先覆盖。不能只提取配色后重新绘制，也不能把未经用户认可的简化版布局作为“修复”。通用 `render_questions.mjs` 会拒绝该模式，应切换原生模板适配继续工作，不删除配置或复制旧脚本绕过。参考页不是可直接交付的新题，必须替换旧题正文、知识图片及备注，核对动画目标和实际可读性。
+
 ## 分工与复用
 
 图片环节调用已安装的 `lesson-image-ppt`：读取其 SKILL.md，遵守原图识读、知识组、标注、分页和动画要求。依赖可从当前 skill 的同级目录或 workspace 的 `.agents/skills` 解析；缺失时说明依赖，不复制替代流程。默认图片识读和讲义设计使用 `gpt-6-astra / low`，新增题目和教学组织使用 `gpt-5.6-sol / medium`。skill 不能自动改变当前模型；须通过明确支持模型配置的执行器执行，并核实真实配置，不能错标模型成绩。
