@@ -53,3 +53,9 @@
 其中registry含`sourceRecords`与`questions`，字段见data.md；mapping为该实际视图的页面数组，各题页含`questionId,page`。完整和题目视图各跑一次；程序读取PPT实际播放顺序，核对来源记录归属、精确同题重复、原题身份与每题各页题源。该程序不判断语义等价，不替代材料/答案完整覆盖与教研检查。
 
 所有最终检查与预览必须指向同一版文件：记录最终PPT/DOCX的路径与SHA256，生成新文件后旧映射、旧预览、旧报告自动失效。交付前重算哈希核对，任何重排、改字或重新导出后复核受影响内容与所有页码引用；不能用私有目录中同名或上一版通过记录证明本版通过。缺少对应的真实渲染/播放证据仍标未验证。
+
+### 倒推的页面落盘门禁
+
+原生与通用分析适配都要读取native-essay-template.md的共享显示接口。先对每组调用`analysis_presentation.compile_display`；基于其输出测量容量、分页、写入原有区域；用analysisBlocks记录实际对象ID。最终完整及题目视图均运行：
+`python check_analysis_screen.py final.pptx questions.json final-view-mapping.json --report analysis-screen.json`
+该门禁按实际播放页序与对象读取显示文字，拒绝只在底稿reason、备注或答案页中存在的联系；报告绑定当前文件哈希。缺responseAnchor时回内容加工，不能由渲染器自动用evidence的任意子串补齐。程序只验证审定表达传到了页面；原答案保真、回应设问和知识完整仍由语义复核实际页面，不宣称字符串检查能判定教学质量。

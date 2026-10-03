@@ -31,3 +31,11 @@
 每种采用的分析／答案版式至少留一组原页与新页并排图，检查区域及文字样式、知识回看、材料→原理关系、答案段落、箭头和括线。所有新页逐页检查可读性和重叠。保留简短私有记录：模板哈希与原页、输出页、替换了哪些内容区域、分页及必要样式例外、动画和视觉实际检查结论。检查不能仅比较文字数量或宣布模板文件存在；出现旧题残留、缺知识回看、改成自设计布局或分析/答案混杂，均须修正后再交付。
 
 题源须来自原文sourceLabel，在材料前保留到每个分析/答案页，自拟题名不能替代。最终原生PPT同样执行running.md的check_source_delivery.py门禁，报告绑定该文件SHA256；临时适配器不能绕过此检查。
+
+## 必须执行的分析显示接口
+
+临时原生适配器不得自行只取evidenceDisplay/principleDisplay。每组先调用共享`analysis_presentation.compile_display(item)`，将返回的`material`和`knowledge`写入教师原有材料概括框与知识框，保留原箭头和区域，不新增“为什么”第三列。返回的material包含必要的简短回应设问语，knowledge保留所引用的完整知识命题；不再让principleDisplay短标签覆盖命题。若原命题过长，应在内容审定时选取完整、适用的原句，不能在渲染时截短。
+
+容量测量必须针对compile_display的实际输出，包含回应语、完整知识命题、行距和内边距。采用共享`analysis_presentation.paginate`，传实际可用高度与已测各组高度；禁止`len(groups)>1`、按固定题号或固定每页一点分割。空间不足允许语义续页，不能反向删掉回应或缩字。多组同页时每组对象使用唯一ID，动画逐组呈现；续页仍保留本题任务及必要知识关系。
+
+每个分析页面在映射增加`analysisBlocks:[{analysisIndex:1,materialShapeId:14,knowledgeShapeId:17}]`（索引从1开始，ID取实际原生对象），组装到最终视图后回填实际页码。执行running.md的check_analysis_screen.py，缺失映射或未落盘的对应视为失败。没有这项检查，引用字段齐全和渲染无重叠均不能算完成。

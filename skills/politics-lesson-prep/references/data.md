@@ -34,3 +34,5 @@
 原题身份记录：保存`sourceRecords`原始出现清单，每条含`id, material, prompt, options?（字符串数组）, sourceLabel（原题出处，无则空）, referenceAnswer, referenceExplanation`及私有文件定位。题目加工后的记录含`sourceRecords:[原始记录id...]`。完全相同的材料、设问、选项且答案/解析一致的跨文档重复，仅建一个题目记录，合并所有来源；同材料不同小问、不同选项或答案/解析有差异时不能自动合并。答案/解析版本差异先回源核对，不由模型擅自选定或重判。完全同题合并是来源归并，不是删题或选讲，不放入excluded；刻意再练仅在用户明确要求时另设教学活动，不伪装为新输入题。
 
 `sourceLabel`与自拟`title`分开：必须原样保留原题出处，不编造，不把概括性题名当成出处。原生模板适配也必须将题源放在材料前，采用既定题源字体层次，并在本题分析/答案各页保留。题源较长需要换行时，给其实际空间，不缩成难读的一行。
+
+分析呈现另含`responseAnchor`（回应本题的关键联系在屏幕材料概括中的精确短语）及必要时的`responseDisplay`（从原答案/详解提炼的短回应，追加在原材料概括框）。已有evidenceDisplay表达充分则不重复追加。由共享analysis_presentation.compile_display产生最终显示字符串；principleDisplay不得在渲染时替换完整知识命题。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId，供最终文件核对；语义审核不能由anchor包含检查替代。
