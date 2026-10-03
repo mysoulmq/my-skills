@@ -7,7 +7,7 @@
 用 `check_dependency.py --workspace /absolute/workspace --record private-build/dependency.json` 检查并记录实际依赖。依赖版本必须包含知识组校验脚本 check_plan.py；仓库旧版或另一个安装副本不一定具备此接口，不凭技能同名假定版本满足要求。
 
 1. `python extract_docx.py input.docx extracted.json` 生成原序段落和表格，由指定模型一次解释题目结构。重要文字识别问题回原文件核对。
-2. 建立 questions.json 和 teaching-plan.json 后，运行 `python check_teaching.py questions.json teaching-plan.json --report check.json`。脚本核对连续材料引用、字段、活动题号及40分钟合计，不判断学科或教学含义。
+2. 综合题先按 content-review.md 建立从参考答案倒查材料与讲义的依据链，执行 `python check_analysis_grounding.py questions.json knowledge-source.json --report analysis-grounding.json`，再进行材料选择与知识对应的语义复核；原生模板路径同样必须执行。建立 questions.json 和 teaching-plan.json 后，运行 `python check_teaching.py questions.json teaching-plan.json --report check.json`。脚本核对连续材料引用、字段、活动题号及40分钟合计，不判断学科或教学含义。
 3. 使用 `node render_questions.mjs questions.json /absolute/lesson-image-ppt build sequence.json teaching-plan.json` 创建题目页、经教学设计明确需要的可选诊断页、本页讲授卡和稳定页面列表，随后调用依赖的 add_reveals.py 写入原生动画。第一次创建文件前，按 Presentations 技能执行其 operation marker。读取其终检要求，不以生成成功代替验收。
 4. `pptx_views.py manifest.json candidate.pptx --mapping mapping.json` 根据教学序列复制原生页面及其资源关系，保持页面XML和动画。manifest 包含 `decks:{key:absolutePptxPath}` 与 `slides:[{id,deck,sourceSlide,activityIds,clicks}]`。sourceSlide 按实际播放顺序、从1开始，不能根据slide文件名推断。不得重复引用同一源页；需要重复显示时先明确生成独立页实例。复用已有讲義产物只用于日常缓存或接口验证，独立完整试跑必须从原图开始。
 5. `write_plan.py teaching-plan.json mapping.json candidate.docx` 按真实页码生成方案；每个活动须有页面映射，拒绝缺失引用。采用 Documents 技能捆绑 Python、python-docx，渲染并检查全部页面后再交付。
