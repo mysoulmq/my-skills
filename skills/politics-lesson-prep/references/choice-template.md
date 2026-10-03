@@ -24,3 +24,5 @@ source只取输入题目文档明确给出的题源，按原文保留年份、�
 解析前缀按语义选用：确属表述错误时写〔表述错误〕，确属不合题意时写〔不合题意〕；不符合这两类时默认不写前缀，直接给具体解释。不扩大成新的封闭标签库，不为套标签改变判断。内容审核时明确适用标签；渲染器只读取显式diagnosticLabel，缺省无前缀，不从verdict强制推导。带前缀与不带前缀共用测量、布局及动画流程。
 
 教学性呈现与实质补写的边界见content-review.md。必要补写使用teachingAdditions数组，每项含content、reason、basis（具体出处或材料依据）；渲染器将其与review.corrections一起写入对应页备注，不把补写冒充原解析。无实质补写时省略该字段。
+
+用户明确要求保留原参考答案/解析、不要继续重解时，允许review.status="source-preserved"，不能伪标passed或修改本地脚本跳过校验。此模式要求document来源、完整reference.answer/explanation与locator、答案严格不变；review.sourceInstruction记录实际用户要求，review.sourceNote记录本页简短保留说明及已有疑点，conclusion说明未独立核定。每项sourceReason必须为原解析精确摘录，reason与其相同；旁注可忠实压缩，不增加实质结论。不得混入corrections或teachingAdditions。共享校验仍检查题目结构、原解析摘录和答案组合；choiceNotes自动把sourceNote及teachingNotes写入备注。程序通过只代表忠实保留，不代表争议已解决。此模式不用于自编题、缺原答案或擅自改答，也不能由其他会话消息自动代替真实用户要求。

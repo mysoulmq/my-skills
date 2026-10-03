@@ -14,3 +14,22 @@ test('reference answer changes require an explicit resolution',()=>{const q=ques
 test('missing source text does not imply self-authored question',()=>{const q=question();delete q.origin;assert.throws(()=>validateChoice(q,{requireReview:true}),/origin/);});
 
 test('model preference cannot serve as correction authority',()=>{const q=question();q.review.corrections=[{before:'原解释',after:'改解释',reason:'更专业',evidence:[{type:'model-opinion',locator:'模型判断',excerpt:'我认为更好'}]}];assert.throws(()=>validateChoice(q),/actual curriculum/);});
+
+const sourceQuestion=()=>{
+ const q=question();
+ q.reference.explanation=q.options.map(o=>`${o.key}：${o.reason}。`).join('');
+ q.review={status:'source-preserved',conclusion:'Preserved as requested; not independently approved',sourceInstruction:'User requests retaining the supplied explanation',sourceNote:'原答案与解析保留，存在未核定疑点。'};
+ for(const o of q.options){o.sourceReason=o.reason;delete o.judgment;}
+ return q;
+};
+test('explicit source preservation retains provenance without fabricated independent judgments',()=>assert.doesNotThrow(()=>validateChoice(sourceQuestion(),{requireReview:true})));
+test('source preservation status alone does not bypass provenance checks',()=>{const q=sourceQuestion();delete q.review.sourceInstruction;assert.throws(()=>validateChoice(q),/user instruction/);});
+test('source preservation cannot silently change answers or explanations',()=>{
+ const q=sourceQuestion();q.reference.answer='B';assert.throws(()=>validateChoice(q),/match the original/);
+ const r=sourceQuestion();r.options[0].reason='invented';assert.throws(()=>validateChoice(r),/exact reference excerpt/);
+});
+test('source preservation still checks answer combinations',()=>{const q=sourceQuestion();q.options[1].verdict='supported';assert.throws(()=>validateChoice(q),/uniquely supported/);});
+test('source preservation requires a full source and cannot carry new conclusions',()=>{
+ const q=sourceQuestion();q.reference.explanation=null;assert.throws(()=>validateChoice(q),/document answer and explanation/);
+ const r=sourceQuestion();r.teachingAdditions=[{content:'new'}];assert.throws(()=>validateChoice(r),/substantive/);
+});

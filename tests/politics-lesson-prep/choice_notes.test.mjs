@@ -14,3 +14,8 @@ test('necessary additions and corrections reach slide notes with reasons and pro
 test('unsupported substantive additions cannot silently render',()=>{
   assert.throws(()=>choiceNotes({...base,teachingAdditions:[{content:'新推断',reason:'需要补充'}]}),/requires/);
 });
+test('source preservation notice reaches notes without claiming approval',()=>{
+ const notes=choiceNotes({...base,review:{status:'source-preserved',sourceNote:'原解析有待核实'},teachingNotes:['讲：辨认限定。']});
+ assert.ok(notes.includes('原解析保留：原解析有待核实'));
+ assert.ok(notes.includes('讲：辨认限定。'));
+});

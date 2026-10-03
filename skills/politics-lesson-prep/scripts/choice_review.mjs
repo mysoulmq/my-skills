@@ -9,6 +9,17 @@ export function validateChoiceReview(q) {
     for(const field of ['answer','explanation'])if(r[field]!==null&&!filled(r[field]))fail(`invalid reference ${field}`);
   }
   const r=q.review;
+  if(r?.status==='source-preserved'){
+    if(q.origin!=='document'||!filled(q.reference?.answer)||!filled(q.reference?.explanation))fail('source-preserved requires a document answer and explanation');
+    if(!filled(r.sourceInstruction)||!filled(r.sourceNote)||!filled(r.conclusion))fail('source-preserved requires the user instruction, slide note and conclusion');
+    if(q.answer!==q.reference.answer)fail('source-preserved answer must match the original');
+    if(!Array.isArray(r.corrections??[])||!Array.isArray(q.teachingAdditions??[])||(r.corrections??[]).length||(q.teachingAdditions??[]).length)fail('source-preserved cannot contain substantive corrections or additions');
+    for(const o of q.options){
+      if(!filled(o.sourceReason)||!q.reference.explanation.includes(o.sourceReason)||o.reason!==o.sourceReason)
+        fail(`option ${o.key}: source-preserved reason must retain an exact reference excerpt`);
+    }
+    return; // Provenance preservation, not a claim of independent subject approval.
+  }
   if(r?.status!=='passed'||!filled(r.conclusion))fail('unresolved or missing content review; do not release a disputed answer');
   if(q.origin==='document'&&q.reference.answer!==null&&q.reference.answer!==q.answer&&!filled(r.answerChangeReason))fail('answer differs from source without a reasoned resolution');
   const corrections=r.corrections??[];
