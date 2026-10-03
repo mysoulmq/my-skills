@@ -14,6 +14,18 @@ extract=module('extract_docx');views=module('pptx_views');checks=module('check_t
 
 
 class CoreTests(unittest.TestCase):
+    def test_content_plan_does_not_require_timing(self):
+        activity={'id':'a','questionIds':[],
+                  'teaching':{k:'具体讲法' for k in checks.TEACHING},
+                  'cue':{k:'具体提示' for k in ('ask','explain','pitfall','followup','check','transition')}}
+        plan={k:'内容' for k in ('lesson','designRationale','preparation','goals','difficulties')}
+        plan['periods']=[{'title':'知识单元','quickCard':{'mainline':'材料到知识','mustExplain':['概念区别']},'activities':[activity]}]
+        self.assertTrue(checks.check({'questions':[]},plan)['pass'])
+        activity['minutes']=57
+        self.assertTrue(checks.check({'questions':[]},plan)['pass'])
+        activity['minutes']='不填写'
+        self.assertFalse(checks.check({'questions':[]},plan)['pass'])
+
     def test_docx_order_and_table(self):
         with tempfile.TemporaryDirectory() as d:
             f=Path(d)/'source.docx'

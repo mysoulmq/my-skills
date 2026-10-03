@@ -49,14 +49,13 @@ def check(questions, plan):
     covered = set()
     activities = set()
     for period in plan['periods']:
-        for field in ('mainline','mustExplain','timeChoice'):
+        for field in ('mainline','mustExplain'):
             if not period.get('quickCard',{}).get(field):errors.append(f'{period["title"]}: missing quickCard.{field}')
-        if sum(a['minutes'] for a in period['activities']) != 40:
-            errors.append(f'{period["title"]}: duration must total 40')
         for a in period['activities']:
             if a['id'] in activities: errors.append(f'Duplicate activity: {a["id"]}')
             activities.add(a['id'])
-            if a['minutes'] <= 0: errors.append(f'{a["id"]}: nonpositive duration')
+            if 'minutes' in a and (isinstance(a['minutes'], bool) or not isinstance(a['minutes'], (int, float)) or a['minutes'] <= 0):
+                errors.append(f'{a["id"]}: invalid optional duration')
             for qid in a.get('questionIds', []):
                 if qid not in ids: errors.append(f'{a["id"]}: unknown question {qid}')
                 covered.add(qid)

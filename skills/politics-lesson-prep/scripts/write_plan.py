@@ -91,9 +91,9 @@ def write(plan, mapping, output):
         doc.add_heading('必讲透的区别',2)
         for value in card.get('mustExplain',[]):
             p=doc.add_paragraph();p.add_run('● ').bold=True;p.add_run(value)
-        doc.add_heading('40分钟课堂路线',2)
+        doc.add_heading('内容与讲解路线',2)
         table=doc.add_table(rows=1,cols=3);table.autofit=False;columns(table,[2.4,5,10])
-        for cell,width,value in zip(table.rows[0].cells,[2.4,5,10],['时间 / 页码','活动','关键提问']):
+        for cell,width,value in zip(table.rows[0].cells,[2.4,5,10],['页码','活动','关键提问']):
             cell.width=Cm(width);cell.text=value;shade(cell,NAVY)
             for run in cell.paragraphs[0].runs:run.font.color.rgb=RGBColor(255,255,255);run.bold=True
         elapsed=0
@@ -101,13 +101,13 @@ def write(plan, mapping, output):
             related=pages_for(a,mapping)
             if not related:raise ValueError(f'No actual slide mapping for activity {a["id"]}')
             row=table.add_row().cells
-            row[0].text=f'{elapsed}—{elapsed+a["minutes"]}分\n'+page_label(m['page'] for m in related);elapsed+=a['minutes']
+            row[0].text=page_label(m['page'] for m in related)
             row[1].text=a['title'];row[2].text=a.get('cue',{}).get('ask',a['teaching']['ask'])
             for cell in row:
                 if j%2==0:shade(cell,'F0F5F7')
                 for p in cell.paragraphs:p.paragraph_format.space_after=Pt(4)
             keep_row(table.rows[-1])
-        doc.add_paragraph();box(doc,'时间取舍',card.get('timeChoice','优先核心推导；延伸练习按课堂理解情况安排。'),'FFF0E9')
+        doc.add_paragraph();box(doc,'内容取舍',card.get('contentChoice',card.get('timeChoice','优先核心推导；延伸练习按课堂理解情况安排。')),'FFF0E9')
     newpage_heading(doc,'教师课前掌握 · 按需查阅')
     box(doc,'为什么这样安排',plan.get('designRationale',''))
     for value in plan.get('preparation',[]):box(doc,'判断要点',value)
@@ -117,7 +117,7 @@ def write(plan, mapping, output):
         p=doc.add_paragraph();link(p,'返回本课时速览',f'period_{i}')
         for a in period['activities']:
             doc.add_heading(a['title'],2);related=pages_for(a,mapping)
-            doc.add_paragraph('用时 '+str(a['minutes'])+'分钟  ·  课件 '+page_label(m['page'] for m in related))
+            doc.add_paragraph('课件 '+page_label(m['page'] for m in related)+(('  ·  参考用时 '+str(a['minutes'])+'分钟') if 'minutes' in a else ''))
             cue=a.get('cue',{})
             box(doc,'讲解抓手',cue.get('explain',a['teaching']['explanation']))
             table=doc.add_table(rows=0,cols=2);table.autofit=False;columns(table,[2.3,15.1])
