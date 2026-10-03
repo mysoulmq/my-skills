@@ -40,6 +40,16 @@
 
 题目生成使用当前共享render_questions.mjs，依据实际容量和可读性选择同页或layout.analysisPages；不重叠优先于页数。旧任务本地renderer可能仍无条件生成material/analysis/answer多组页面，不可直接复用。先比较其与共享脚本差异，移除旧的强制分析分页和按题号阈值，保留有证据的容量处理。读取layout-decisions.json核实续页依据；分页确定后重建notesByPage、动画与三视图页码，逐问核实全部原理和材料应用都在实际答案页、每个动画目标确实存在且可到达。
 
-收录验收从原始提取的小问清单逐项对照完整PPT和大题PPT两份实际文件，检查材料、设问、全部答案点与映射；不能只核对已筛选的questions.json而漏掉上游被删小问。仅用户明确排除项可不收录。课时不足、optional、重复训练及跨课配套问均不构成少收录的理由。
+收录验收从原始提取的小问清单逐项对照完整PPT和大题PPT两份实际文件，检查材料、设问、全部答案点与映射；不能只核对已筛选的questions.json而漏掉上游被删小问。仅用户明确排除项可不收录。课时不足、optional及跨课配套问均不构成少收录的理由；完全同题按sourceRecords归并，一份页面覆盖其所有来源，不重复造页。
 
 选择题生成前执行content-review.md的来源转化核对，默认review.status=source-preserved、sourcePolicy=provided-answer-authoritative；render_choices.mjs仍拒绝缺来源、改答或不一致组合。不得因模型质疑原解析而暂停或漏收录；缺失/题答错配回原文件核对。选择题与综合题的混合整课组装仍须显式接线并验证，不因独立选择题渲染通过就宣称已有完整混合自动流水线。
+
+### 最终文件的来源与版本门禁（所有渲染路径）
+
+在选题和页面生成前从全部DOCX提取建立原始`sourceRecords`清单，按data.md归并完全同题，保留所有来源定位；不得让“全部收录”变成跨文档同题重复生成。材料与设问相同但参考答案/解析不同先核对版本，不能静默合并。身份比较不做模糊语义去重。
+
+原生模板及通用路径均须执行：
+`python check_source_delivery.py final.pptx source-registry.json final-view-mapping.json --report source-delivery.json`
+其中registry含`sourceRecords`与`questions`，字段见data.md；mapping为该实际视图的页面数组，各题页含`questionId,page`。完整和题目视图各跑一次；程序读取PPT实际播放顺序，核对来源记录归属、精确同题重复、原题身份与每题各页题源。该程序不判断语义等价，不替代材料/答案完整覆盖与教研检查。
+
+所有最终检查与预览必须指向同一版文件：记录最终PPT/DOCX的路径与SHA256，生成新文件后旧映射、旧预览、旧报告自动失效。交付前重算哈希核对，任何重排、改字或重新导出后复核受影响内容与所有页码引用；不能用私有目录中同名或上一版通过记录证明本版通过。缺少对应的真实渲染/播放证据仍标未验证。

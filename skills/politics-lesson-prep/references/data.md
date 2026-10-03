@@ -30,3 +30,7 @@
 原生标注：题目taskFocus（仅用于分析区的任务解释），分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。materialFocus 为兼容旧底稿可保留但渲染器忽略，不再生成；原题材料与顶部设问不自动高亮。其余 Focus 是分析区或最终答案当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，供教学组织、备注或显式分析页使用；最终答案默认显示连续编号，不以branchLabel占据答案正文宽度。完整原理与应用仍用原字段保留。
 
 缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图该题各页回填，另起一行说明总分、评分单位和对应理由；教学提示加预测依据最多6条、240字。
+
+原题身份记录：保存`sourceRecords`原始出现清单，每条含`id, material, prompt, options?（字符串数组）, sourceLabel（原题出处，无则空）, referenceAnswer, referenceExplanation`及私有文件定位。题目加工后的记录含`sourceRecords:[原始记录id...]`。完全相同的材料、设问、选项且答案/解析一致的跨文档重复，仅建一个题目记录，合并所有来源；同材料不同小问、不同选项或答案/解析有差异时不能自动合并。答案/解析版本差异先回源核对，不由模型擅自选定或重判。完全同题合并是来源归并，不是删题或选讲，不放入excluded；刻意再练仅在用户明确要求时另设教学活动，不伪装为新输入题。
+
+`sourceLabel`与自拟`title`分开：必须原样保留原题出处，不编造，不把概括性题名当成出处。原生模板适配也必须将题源放在材料前，采用既定题源字体层次，并在本题分析/答案各页保留。题源较长需要换行时，给其实际空间，不缩成难读的一行。
