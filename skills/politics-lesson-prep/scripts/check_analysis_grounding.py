@@ -23,6 +23,17 @@ def check(data, source):
         covered = set()
         for i, item in enumerate(q.get('analysis', []), 1):
             label = f'{q["id"]}:analysis[{i}]'
+            trace = item.get('referenceTrace', {})
+            answer_quote = norm(trace.get('answerQuote', ''))
+            if not answer_quote or answer_quote not in norm(q.get('referenceAnswer', '')):
+                errors.append(label + ': missing/non-source reference answer quote')
+            explanation = norm(q.get('referenceExplanation', ''))
+            explanation_quote = norm(trace.get('explanationQuote', ''))
+            if explanation:
+                if trace.get('mode') != 'explanation-led' or not explanation_quote or explanation_quote not in explanation:
+                    errors.append(label + ': trace must use the provided reference explanation')
+            elif trace.get('mode') != 'answer-only' or explanation_quote:
+                errors.append(label + ': absent explanation requires honest answer-only trace')
             quotes = item.get('evidenceQuotes') or [item.get('evidence', '')]
             if not quotes or any(not norm(v) or norm(v) not in norm(q['material']) for v in quotes):
                 errors.append(label + ': evidence must quote original material')

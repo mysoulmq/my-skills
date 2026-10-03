@@ -10,6 +10,21 @@ class GroundingTest(unittest.TestCase):
         self.data={'questions':[{'id':'q1','material':'事实甲，事实乙。','answer':[{},{}],'analysis':[
             {'evidence':'事实甲','evidenceDisplay':'事实甲','principle':'理论命题甲。','knowledgeRefs':[{'unitId':'u1','quote':'理论命题甲。'}],'answerRefs':[1]},
             {'evidence':'事实乙','evidenceDisplay':'事实乙','principle':'理论命题乙。','knowledgeRefs':[{'unitId':'u2','quote':'理论命题乙。'}],'answerRefs':[2]}]}]}
+        q=self.data['questions'][0]
+        q['referenceAnswer']='理论命题甲。理论命题乙。'
+        q['referenceExplanation']='事实甲对应理论命题甲。事实乙对应理论命题乙。'
+        for a in q['analysis']:
+            a['referenceTrace']={'answerQuote':a['principle'], 'explanationQuote':a['evidence']+'对应'+a['principle'], 'mode':'explanation-led'}
+    def test_cannot_ignore_provided_explanation(self):
+        self.data['questions'][0]['analysis'][0]['referenceTrace']={'answerQuote':'理论命题甲。','mode':'answer-only'}
+        self.assertTrue(any('provided reference explanation' in e for e in m.check(self.data,self.source)))
+    def test_cannot_fabricate_reference_answer(self):
+        self.data['questions'][0]['analysis'][0]['referenceTrace']['answerQuote']='自行发挥'
+        self.assertTrue(any('reference answer quote' in e for e in m.check(self.data,self.source)))
+    def test_answer_only_when_no_explanation(self):
+        q=self.data['questions'][0];q['referenceExplanation']=''
+        for a in q['analysis']:a['referenceTrace'].update(mode='answer-only',explanationQuote='')
+        self.assertEqual(m.check(self.data,self.source),[])
     def test_valid(self):self.assertEqual(m.check(self.data,self.source),[])
     def test_application_cannot_replace_knowledge(self):
         self.data['questions'][0]['analysis'][0]['principle']='现实需要得到满足'
