@@ -45,4 +45,20 @@ class TeacherExamplesTests(unittest.TestCase):
         self.deck.write_bytes(self.deck.read_bytes()+b'changed')
         with self.assertRaisesRegex(ValueError,'hash changed'):read_bank(self.workspace,['e1'])
 
+    def test_recall_image_is_verified_against_actual_relationship(self):
+        with ZipFile(self.deck) as z:files={n:z.read(n) for n in z.namelist()}
+        source='ppt/slides/slide7.xml'
+        pic='<p:pic><p:nvPicPr><p:cNvPr id="10"/></p:nvPicPr><p:blipFill><a:blip xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:embed="im1"/></p:blipFill></p:pic>'
+        files[source]=files[source].replace(b'</p:sld>',pic.encode()+b'</p:sld>')
+        files['ppt/slides/_rels/slide7.xml.rels']=b'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="im1" Target="../media/example.png" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"/></Relationships>'
+        files['ppt/media/example.png']=b'synthetic-image-bytes'
+        with ZipFile(self.deck,'w') as z:
+            for name,data in files.items():z.writestr(name,data)
+        self.bank['sources']['d']['sha256']=hashlib.sha256(self.deck.read_bytes()).hexdigest()
+        e=self.bank['examples'][0];e['uses']=['knowledge-recall'];e['excerpts']=[{'role':'input',**e['prompt']},{'role':'output','kind':'image','source':{'deck':'d','page':1,'shapeId':'10'},'sha256':hashlib.sha256(files['ppt/media/example.png']).hexdigest()}];self.save()
+        out=read_bank(self.workspace,['e1'],'knowledge-recall')
+        self.assertEqual(Path(out['examples'][0]['excerpts'][1]['verifiedImagePath']).read_bytes(),files['ppt/media/example.png'])
+        e['excerpts'][1]['sha256']='wrong';self.save()
+        with self.assertRaisesRegex(ValueError,'image hash changed'):read_bank(self.workspace,['e1'],'knowledge-recall')
+
 if __name__=='__main__':unittest.main()

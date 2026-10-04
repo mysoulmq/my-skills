@@ -63,3 +63,13 @@
 该门禁按实际播放页序与对象读取显示文字，检查审定的材料概括与知识短句是否确实落在对应分析区；报告绑定当前文件哈希。缺teachingFocus/displayAnchors或遇到旧response字段时，自主回原资料修订相应内容后重导出，不能由渲染器取任意子串凑齐或把答案追加进材料栏。程序只验证引用与显示传递；另对实际页面逐组核对设问焦点、主依据、知识对应和概括保真，不能将字符串检查当教学验收。
 
 选择题交付前对**最终完整PPT和题目PPT**运行 `python check_choice_reveals.py final.pptx --choices choices.json --report choice-animation-check.json`。它检查真实OOXML动画与选项原文，拒绝未注入动画的候选或把解析混入选项；assemble同时对输入与合并后文件进行动画门禁。静态导出不能显示点击过程，不拿全显预览证明初始放映态。
+
+原生知识回看另执行[知识回看来源及落盘检查](knowledge-recall.md)：真实来源catalog、层级、对应知识区对象、已审定强调均核到最终PPT。答案角色段落和无依据黄底同样检查。先核定是否需要标记，再验证标记传递，不把空focus自动当失败，也不以“已加高亮”代替教师样式验收。知识区紧凑参数与分析容量联合测量，输出字号/行距必须与测量一致。
+
+### 首页重点与跨页审题的实际文件检查
+
+首页大纲先按lesson-image-ppt的highlighting.md/prepare_marks.py编译少量来源有据的重点强调：红字或黄色文字背景二选一，不叠加，不要求两种同时出现，保留原稿★及其知识归属；没有来源星号不能自造。汇总到框目时星号仍绑定相应重点，不靠在标题随便加一颗星通过检查。“审材料第二列无高亮”与“规范答案默认无黄底”是区域规则，不能删除首页大纲的重点层次。
+
+为完整授课与讲义视图各保存`opening-map.json`：`nodes:[{shapeId,text,focus,starRefs}]`，focus是语义重点清单，实际落盘为红字（FF0000/C00000）或黄色文字背景（FFFF00）均通过，主题色须先解析为明确sRGB；缺少黄色但红字正确不能判失败。starRefs引用本课已核定source.units中带★的单元；多个来源重点合并到同一导航节点时可共用一个★，仍保留来源归属。调用`python scripts/check_opening_outline.py final.pptx source.json opening-map.json --report opening-check.json`，读取实际第一张幻灯片核对强调/星号，而非找任意页面凑通过。题目分视图没有大纲时不要求此项。
+
+跨页审材料按animation-validation.md记录auditShapeIds；check_analysis_screen核对每页审题区无动画，不只删reveal-plan里的文字。重排后两类映射随最终对象ID和实际页序更新。

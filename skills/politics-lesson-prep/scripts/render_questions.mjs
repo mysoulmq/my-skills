@@ -83,14 +83,16 @@ for(const q of data.questions){
   put(s,'审题——\n确定答题格式',650,top,160,{font:F.label,size:24,name:`${q.id}-analysis-${part+1}-task-label`});
   const taskName=`${q.id}-analysis-${part+1}-task`;
   put(s,q.task,838,top,426,{bold:true,focus:q.taskFocus||[],name:taskName});
-  steps.push([arrow(s,806,top+22,taskName+'-arrow'),taskName]);let y=start;
+  // The audit of the question is immediately visible; continuation pages do
+  // not make the teacher click through the same instruction again.
+  arrow(s,806,top+22,taskName+'-arrow');let y=start;
   for(const [i,a] of items.entries()){
    const name=`${q.id}-analysis-${part+1}-${i+1}`,ph=h(a.principle,426,24,{bold:true});
    put(s,'原理定位',650,y,150,{font:F.label,size:28,name:name+'-label'});
    const bs=brace(s,822,y,ph,name+'-brace');
    put(s,a.principle,838,y,426,{bold:true,focus:a.principleFocus||[],name:name+'-principle'});
    steps.push([...bs,name+'-principle']);y+=ph+14;
-   put(s,a.evidence,650,y,245,{focus:a.evidenceFocus||[],name:name+'-evidence'});
+   put(s,a.evidence,650,y,245,{focus:[],name:name+'-evidence'});
    put(s,a.reason,957,y,295,{name:name+'-reason'});
    steps.push([name+'-evidence',arrow(s,913,y+14,name+'-arrow'),name+'-reason']);
    y+=Math.max(h(a.evidence,245,24),h(a.reason,295,24))+40;

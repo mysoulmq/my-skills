@@ -33,7 +33,7 @@
 
 题目视觉字段：totalScore（正数）＋totalScoreSource（明确来源）用于补充原设问缺失的已知总分，原prompt及原文保留；不同来源分值冲突拒绝静默覆盖。不要仅因word漏分而忽略同题截图的分值。`principleScore`与`applicationScore`分别表示已有依据的知识分、材料对应分，标签保留原评分对象；只有整点分值时才用兼容字段`score`，不能同时使用两套字段。无原始依据的分项只能明确作为教学拟分并进入备注，totalScore不自动平均分摊，正文不显示预测分项。
 
-原生标注：题目taskFocus（仅用于分析区的任务解释），分析项principleFocus/evidenceFocus，答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。materialFocus 为兼容旧底稿可保留但渲染器忽略，不再生成；原题材料与顶部设问不自动高亮。其余 Focus 是分析区或最终答案当前文本中需黄色背景的精确子串，Emphasis是材料应用的加粗子串；逐项按教学作用选择，不用全课关键词字典。branchLabel提炼该点的真实原理角度，供教学组织、备注或显式分析页使用；最终答案默认显示连续编号，不以branchLabel占据答案正文宽度。完整原理与应用仍用原字段保留。
+原生标注：题目taskFocus（仅用于分析区的任务解释），分析项principleFocus（evidenceFocus仅兼容旧稿，第二列禁止渲染），答案项branchLabel、principleFocus、applicationFocus、applicationEmphasis。materialFocus 为兼容旧底稿可保留但渲染器忽略，不再生成；原题材料与顶部设问不自动高亮。其余 Focus 是已确认需黄色背景的精确子串，Emphasis是加粗子串；两者独立，不能互填。默认答案不新增黄底，具体按native-essay-template.md分角色处理；明确空数组有效，不为补字段自动创造强调，不用全课关键词字典。branchLabel提炼该点的真实原理角度，供教学组织、备注或显式分析页使用；最终答案默认显示连续编号，不以branchLabel占据答案正文宽度。完整原理与应用仍用原字段保留。
 
 缺分预测使用scoreStatus: predicted及scorePrediction，字段和估分方法见score-prediction.md；原题有分值的scoreStatus为provided（兼容缺省）。方案scoreNotesByPage由assemble按视图该题各页回填，另起一行说明总分、评分单位和对应理由；教学提示加预测依据最多6条、240字。
 
@@ -48,3 +48,5 @@
 共享analysis_presentation.compile_display提供内容层；最终两栏调用compile_question(question)，按整题分组生成成对序号、剥离显示文本开头的旧条目号，不修改来源引用。先编译编号再分页，不能每页重新编号。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId。旧responseAnchor/responseDisplay接口停用：回原题、原解析重新审定材料，迁移到上述字段；不能仅改字段名、把旧答案式回应机械拼入材料，或删掉已有必要联系来过门禁。普通迁移自主完成，不询问用户。
 
 已安装teacher-examples.json时，每题保存`teacherExampleRefs:[实际读过的样例ID]`，整轮保存一次样例库哈希和所读ID；同批新题复用已读样例，不重复加载全文。生成前的读取和最终usage核对见teacher-few-shots.md。该记录不等于教学通过，必须比对实际第二、第三列的表达与对应。
+
+知识回看另存knowledgeRecall，按[知识回看数据与来源](knowledge-recall.md)核定范围、真实来源节点、父子层级及样例引用，不从analysis.principle自动拼接。

@@ -8,7 +8,7 @@ import re
 
 CLOSING=set('，。；：！？、）】》〉〕］｝”’％%,.!?;:)]}…')
 OPENING=set('（【《〈〔［｛“‘([{')
-TOKENS=re.compile(r'[A-Za-z]+(?:[0-9]+)?|[0-9]+(?:[.,．][0-9]+)*(?:[—–~～-][0-9]+(?:\.[0-9]+)*)?(?:[%％]|分钟|分|年|月|日|个|项|点|次|倍|万|亿|元|人|页|课|框|目|条)?[、.]?|[①-⑳]|——')
+TOKENS=re.compile(r'[A-Za-z0-9]+(?:[._-][A-Za-z0-9]+)*[A-Za-z][A-Za-z0-9]*|[A-Za-z]+(?:[0-9]+)?|[0-9]+(?:[.,．][0-9]+)*(?:[—–~～-][0-9]+(?:\.[0-9]+)*)?(?:[%％]|分钟|分|年|月|日|个|项|点|次|倍|万|亿|元|人|页|课|框|目|条)?[、.]?|[①-⑳]|——')
 
 
 def line_errors(lines):
@@ -23,7 +23,7 @@ def line_errors(lines):
     return errors
 
 
-def wrap_native_text(text, width, measure, safety=0):
+def wrap_native_text(text, width, measure, safety=0, measure_slice=None):
     """Return lines for BOTH height measurement and actual OOXML writing.
 
     width excludes text-box insets; safety is an additional renderer allowance.
@@ -54,7 +54,7 @@ def wrap_native_text(text, width, measure, safety=0):
         while start<len(para):
             best=None
             for end in range(start+1,len(para)+1):
-                value=measure(para[start:end])
+                value=measure_slice(para,start,end) if measure_slice else measure(para[start:end])
                 if not isinstance(value,(int,float)) or not math.isfinite(value) or value<0:
                     raise ValueError('Invalid font measurement')
                 if value>limit:break

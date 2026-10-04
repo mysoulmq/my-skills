@@ -9,7 +9,7 @@ import json
 from pathlib import Path
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
-from pptx_views import ordered_slides
+from pptx_views import ordered_slides,relpath,resolve
 
 A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
 P='{http://schemas.openxmlformats.org/presentationml/2006/main}'
@@ -51,6 +51,19 @@ def read_bank(workspace, ids=None, task=None):
             page=ref['page']
             if type(page) is not int or not 1<=page<=len(order):raise ValueError('Invalid teacher page')
             root=ET.fromstring(files[order[page-1]])
+            if value.get('kind')=='image':
+                pics=[pic for pic in root.iter(P+'pic') if pic.find('.//'+P+'cNvPr').get('id')==str(ref['shapeId'])]
+                if len(pics)!=1:raise ValueError('Teacher recall image missing')
+                rid=pics[0].find('.//'+A+'blip').get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed')
+                rels=ET.fromstring(files[relpath(order[page-1])])
+                target=next((r.get('Target') for r in rels if r.get('Id')==rid),None)
+                if target is None:raise ValueError('Teacher image relationship missing')
+                part=resolve(order[page-1],target);raw=files[part];digest=hashlib.sha256(raw).hexdigest()
+                if digest!=value.get('sha256'):raise ValueError('Teacher recall image hash changed')
+                dest=path.parent/'teacher-examples'/'verified-images'/(digest+Path(part).suffix)
+                dest.parent.mkdir(parents=True,exist_ok=True);dest.write_bytes(raw)
+                value['verifiedImagePath']=str(dest)
+                continue
             matches=[]
             for sp in root.iter(P+'sp'):
                 nv=sp.find('.//'+P+'cNvPr')
@@ -65,13 +78,13 @@ def read_bank(workspace, ids=None, task=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('workspace');p.add_argument('--ids',nargs='+');p.add_argument('--usage')
-    p.add_argument('--task',choices=['outline','essay-analysis','essay-answer','choice-explanation'])
+    p.add_argument('--task',choices=['outline','essay-analysis','essay-answer','choice-explanation','knowledge-recall'])
     a=p.parse_args();result=read_bank(a.workspace,a.ids,a.task)
     if a.usage:
         if not a.ids:raise ValueError('--usage requires the selected --ids')
         questions=json.loads(Path(a.usage).read_text())['questions']
         for q in questions:
-            refs=q.get('teacherExampleRefs',[])
+            refs=q.get('knowledgeRecall',{}).get('teacherExampleRefs',[]) if a.task=='knowledge-recall' else q.get('teacherExampleRefs',[])
             if not refs or any(i not in a.ids for i in refs):
                 raise ValueError(q['id']+': missing or unread teacherExampleRefs')
         result={'bankSha256':result['bankSha256'],'exampleIds':a.ids,

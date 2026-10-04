@@ -85,4 +85,10 @@ class ScreenTests(unittest.TestCase):
             with ZipFile(f,'w') as z:
                 for name,data in parts.items():z.writestr(name,data)
             self.assertTrue(any('punctuation' in e for e in check(f,q,m)['errors']))
+            write(compiled['material'])
+            with ZipFile(f) as z:parts={n:z.read(n) for n in z.namelist()}
+            parts[slide]=parts[slide].replace(('<a:t>'+compiled['material']+'</a:t>').encode(),('<a:r><a:rPr><a:highlight><a:srgbClr val="FFFF00"/></a:highlight></a:rPr><a:t>'+compiled['material']+'</a:t></a:r>').encode())
+            with ZipFile(f,'w') as z:
+                for name,data in parts.items():z.writestr(name,data)
+            self.assertTrue(any('must not be highlighted' in e for e in check(f,q,m)['errors']))
             write(compiled['material']);m[0]['kind']='answer';self.assertFalse(check(f,q,m)['pass'])
