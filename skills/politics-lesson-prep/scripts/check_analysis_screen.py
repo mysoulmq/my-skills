@@ -5,6 +5,7 @@ from zipfile import ZipFile
 from xml.etree import ElementTree as ET
 from pptx_views import ordered_slides
 from analysis_presentation import compile_question,norm
+from native_line_breaks import line_errors
 A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
 P='{http://schemas.openxmlformats.org/presentationml/2006/main}'
 
@@ -22,16 +23,27 @@ def check(pptx,questions,mapping):
         if p.get('kind')!='analysis':errors.append('analysisBlocks on a non-analysis page');continue
         n=p['page']
         if type(n)!=int or not 1<=n<=len(order):errors.append('Invalid actual page');continue
-        root=ET.fromstring(files[order[n-1]]);shapes={}
+        root=ET.fromstring(files[order[n-1]]);shapes={};shape_lines={}
         for sp in root.iter(P+'sp'):
             nv=sp.find('.//'+P+'cNvPr')
-            if nv is not None:shapes[nv.get('id')]=''.join(t.text or '' for t in sp.iter(A+'t'))
+            if nv is not None:
+                shapes[nv.get('id')]=''.join(t.text or '' for t in sp.iter(A+'t'))
+                lines=[]
+                for para in sp.iter(A+'p'):
+                    line=''
+                    for node in para.iter():
+                        if node.tag==A+'t':line+=node.text or ''
+                        elif node.tag==A+'br':lines.append(line);line=''
+                    lines.append(line)
+                shape_lines[nv.get('id')]=lines
         for b in blocks:
             key=(p['questionId'],b['analysisIndex']);value=expected.get(key)
             if value is None:errors.append(f'P{n}: unknown/invalid analysis {key}');continue
             seen.add(key)
             for role in ('material','knowledge'):
-                text=shapes.get(str(b[role+'ShapeId']),'')
+                sid=str(b[role+'ShapeId']);text=shapes.get(sid,'')
+                for issue in line_errors(shape_lines.get(sid,[])):
+                    errors.append(f'P{n} {key} {role}: {issue}')
                 if norm(value[role]) not in norm(text):errors.append(f'P{n} {key}: compiled {role} missing from assigned shape')
     for key in expected.keys()-seen:errors.append(f'{key}: no actual analysis-page mapping')
     return {'pass':not errors,'errors':errors,'sha256':hashlib.sha256(Path(pptx).read_bytes()).hexdigest(),

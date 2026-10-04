@@ -77,4 +77,12 @@ class ScreenTests(unittest.TestCase):
             write(a['evidenceDisplay']);self.assertFalse(check(f,q,m)['pass'])
             write(compiled['material'],'（2）'+a['principleDisplay']);self.assertFalse(check(f,q,m)['pass'])
             write('需求变化');self.assertFalse(check(f,q,m)['pass'])
+            write(compiled['material'])
+            with ZipFile(f) as z:parts={n:z.read(n) for n in z.namelist()}
+            slide='ppt/slides/slide9.xml'
+            parts[slide]=parts[slide].replace(('<a:t>'+compiled['knowledge']+'</a:t>').encode(),
+                ('<a:p><a:r><a:t>'+compiled['knowledge']+'</a:t></a:r></a:p><a:p><a:r><a:t>。</a:t></a:r></a:p>').encode())
+            with ZipFile(f,'w') as z:
+                for name,data in parts.items():z.writestr(name,data)
+            self.assertTrue(any('punctuation' in e for e in check(f,q,m)['errors']))
             write(compiled['material']);m[0]['kind']='answer';self.assertFalse(check(f,q,m)['pass'])
