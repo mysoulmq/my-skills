@@ -34,3 +34,6 @@ class ModelRoutingTests(unittest.TestCase):
  def test_internal_stages_do_not_create_user_threads(self):
   r=self.record();r['executor']='codex.create_thread';r['acceptedRequest']['thinking']='medium';r['executorResult']={'threadId':'returned-thread'}
   self.assertFalse(check([r])['pass'])
+
+ def test_unknown_runtime_text_does_not_crash_or_prove_runtime(self):
+  r=self.record();r['reportedRuntime']='not reported';self.assertFalse(check([r])['pass'])

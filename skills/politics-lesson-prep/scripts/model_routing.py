@@ -37,7 +37,9 @@ def check(records, required=()):
         if not (identity.get('threadId') if thread else (identity.get('agent_id') or identity.get('task_name'))):errors.append(f"{r['stage']}: missing executor-returned identity")
         if not r.get('evidencePath'):errors.append(f"{r['stage']}: missing dispatch evidence location")
         reported=r.get('reportedRuntime')
-        if reported:
+        if reported is not None and not isinstance(reported,dict):
+            errors.append(f"{r['stage']}: reportedRuntime must be a metadata object or null; put unknown-runtime text in runtimeStatus")
+        elif reported:
             for k,v in expected.items():
                 if reported.get(k)!=v:errors.append(f"{r['stage']}: reported runtime {k} mismatch")
     return {'pass':not errors,'errors':errors,'scope':'Executor configuration consistency only; absent runtime metadata is not inferred'}
