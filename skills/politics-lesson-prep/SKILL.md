@@ -41,6 +41,8 @@ description: Use when preparing a complete senior-high politics lesson from hand
 
 Word 用 `scripts/extract_docx.py` 提取，一轮只提取/识读一次。阶段间传必要内容，不附整段会话。三份课件和方案共用同一底稿；排版、动画写入、页码回填和覆盖检查由程序完成。修改时只更新受影响单元。字体、颜色及受支持间距直接读取依赖的 assets/teaching-template.pptx，保留稳定命名对象；具体修改范围见依赖 references/editable-template.md。排布优先调用依赖的 comfortable 正文间距预设及题目渲染器的答案留白分配，不要求模型逐页重算坐标；模型只负责语义分组、短标签断句与失败页例外。
 
+用户要求重头试跑时执行model-routing.md的完整重跑约定，重新识读原图和提取原题，不继承旧教学稿及通过结论。
+
 实际执行脚本时读取 [执行与验证](references/running.md)，按共同教学序列构建各视图，不直接将两份成品前后拼接。
 
 ## 课型

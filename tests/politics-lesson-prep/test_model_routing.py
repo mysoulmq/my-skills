@@ -24,3 +24,13 @@ class ModelRoutingTests(unittest.TestCase):
 
  def test_unknown_stage_returns_actionable_failure(self):
   r=self.record();r['stage']='repair-new-stage';self.assertFalse(check([r])['pass'])
+
+ def test_root_thread_receipt_uses_actual_tool_argument_names(self):
+  r={'stage':'orchestration','executor':'codex.create_thread','acceptedRequest':{'model':'gpt-6.1-sol','thinking':'medium'},'executorResult':{'threadId':'returned-thread'},'evidencePath':'private/create-result.json'}
+  self.assertTrue(check([r])['pass'])
+  r['acceptedRequest']['thinking']='high';self.assertFalse(check([r])['pass'])
+ def test_complete_run_cannot_omit_teaching_review(self):
+  self.assertFalse(check([self.record()],['teaching_transform','teaching_review'])['pass'])
+ def test_internal_stages_do_not_create_user_threads(self):
+  r=self.record();r['executor']='codex.create_thread';r['acceptedRequest']['thinking']='medium';r['executorResult']={'threadId':'returned-thread'}
+  self.assertFalse(check([r])['pass'])
