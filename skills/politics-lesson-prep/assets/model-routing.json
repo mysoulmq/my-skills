@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "status": "working-hypothesis",
+  "stages": {
+    "orchestration": {"model": "gpt-6.1-sol", "reasoning_effort": "medium"},
+    "image_transcription": {"model": "gpt-6-astra", "reasoning_effort": "low"},
+    "teaching_transform": {"model": "gpt-6-astra", "reasoning_effort": "medium"},
+    "teaching_review": {"model": "gpt-6-astra", "reasoning_effort": "medium"}
+  },
+  "programmatic": ["docx-extraction", "layout", "animation", "numbering", "source-check", "coverage-check", "export"]
+}
