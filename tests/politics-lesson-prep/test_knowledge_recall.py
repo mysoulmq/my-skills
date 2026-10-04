@@ -25,6 +25,22 @@ class RecallTests(unittest.TestCase):
  def test_wrap_changes_only_whitespace(self):
   d=self.data();d['nodes'][1]['text']='具体原理\n及限定。'
   self.assertEqual(compile_recall(d,self.catalog())[1]['text'],'具体原理及限定。')
+ def test_standalone_heading_ordinal_is_display_only(self):
+  d=self.data();d['nodes'][0].update(text='2、上位标题',source={'kind':'handout','unitId':'p','quote':'2、上位标题'},display={'omitSourceNumber':True})
+  catalog={**self.catalog(),'unit:p':'2、上位标题'}
+  out=compile_recall(d,catalog)
+  self.assertEqual(out[0]['text'],'上位标题')
+  self.assertEqual(out[0]['sourceText'],'2、上位标题')
+  self.assertEqual(out[0]['source']['quote'],'2、上位标题')
+  self.assertEqual(d['nodes'][0]['text'],'2、上位标题')
+  d['nodes'][1]['display']={'omitSourceNumber':True}
+  with self.assertRaisesRegex(ValueError,'standalone'):compile_recall(d,catalog)
+ def test_heading_display_cannot_delete_content_or_internal_numbers(self):
+  for text in ['①内部论点','2026年发展','5G网络','3.5倍增长','第二课知识','普通标题']:
+   d=self.data();d['nodes'][0].update(text=text,source={'kind':'handout','unitId':'p','quote':text},display={'omitSourceNumber':True})
+   with self.assertRaisesRegex(ValueError,'No removable'):compile_recall(d,{**self.catalog(),'unit:p':text})
+  d=self.data();d['nodes'][0]['display']={'replacementText':'自改标题'}
+  with self.assertRaisesRegex(ValueError,'Unknown recall'):compile_recall(d,self.catalog())
  def test_spans_preserve_text_and_overlapping_marks(self):
   spans=emphasis_spans('甲乙丙丁',['甲乙'],['乙丙'])
   self.assertEqual(''.join(x['text'] for x in spans),'甲乙丙丁')

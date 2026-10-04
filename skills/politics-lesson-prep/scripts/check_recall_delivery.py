@@ -5,6 +5,7 @@ from zipfile import ZipFile
 from xml.etree import ElementTree as E
 from pptx_views import ordered_slides
 from knowledge_recall import compile_recall,norm
+from native_recall_background import check_recall_background
 A='{http://schemas.openxmlformats.org/drawingml/2006/main}';P='{http://schemas.openxmlformats.org/presentationml/2006/main}'
 
 def styled_text(shape):
@@ -36,6 +37,8 @@ def check(pptx,records,catalog,mapping):
         known_nodes={node['id']:node for node in nodes}
         if set(node_shapes)-known_nodes.keys():errors.append(f'P{n}: unknown recall nodes')
         if rid is not None and not node_shapes:errors.append(f'P{n}: empty recall node mapping')
+        if rid is not None:
+            errors.extend(f'P{n}: {issue}' for issue in check_recall_background(root,node_shapes.values(),page.get('backgroundShapeId')))
         # Continuations may carry a subset; the union must still cover the
         # complete source-backed record. Never truncate records to fit pages.
         for node_id,sid in node_shapes.items():

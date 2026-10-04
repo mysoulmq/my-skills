@@ -7,6 +7,25 @@ def source_key(source):
     if source.get('unitId'):return 'unit:'+source['unitId']
     return f"ppt:{source.get('deck')}:{source.get('page')}:{source.get('shapeId')}"
 
+
+def recall_display_text(node, route):
+    """Drop a reviewed orphan heading ordinal, never edit its source quote."""
+    text=norm(node['text'])
+    display=node.get('display',{})
+    if not isinstance(display,dict) or set(display)-{'omitSourceNumber'}:
+        raise ValueError('Unknown recall display transformation')
+    omit=display.get('omitSourceNumber',False)
+    if type(omit)!=bool:raise ValueError('omitSourceNumber must be boolean')
+    if not omit:return text
+    if route!='handout' or node.get('parentId') is not None:
+        raise ValueError('Only a standalone handout heading can omit its source ordinal')
+    # Circled internal list items, textbook chapter/frame names, years, units,
+    # decimals and substantive wording are intentionally not matched.
+    prefix=r'^(?:[0-9]+[、．]|[0-9]+\.(?![0-9])|[一二三四五六七八九十百]+、|[（(](?:[0-9]+|[一二三四五六七八九十百]+)[）)])'
+    result,count=re.subn(prefix,'',text,count=1)
+    if not count or not result:raise ValueError('No removable source heading ordinal')
+    return result
+
 def compile_recall(record,catalog):
     route=record.get('route')
     if route not in ('handout','outline-branch','outline-overview'):
@@ -26,12 +45,13 @@ def compile_recall(record,catalog):
             raise ValueError('Recall quote is not the complete registered source node')
         if norm(node.get('text',''))!=norm(actual):
             raise ValueError('Recall changed source wording; only whitespace reflow is allowed')
+        display_text=recall_display_text(node,route)
         emph=node.get('emphasis',[])
-        if not isinstance(emph,list) or any(not norm(s) or norm(s) not in norm(actual) for s in emph):
+        if not isinstance(emph,list) or any(not norm(s) or norm(s) not in display_text for s in emph):
             raise ValueError('Recall emphasis must be an exact source substring')
         depth=0 if parent is None else seen[parent]+1
         seen[ident]=depth
-        result.append({**node,'text':norm(node['text']),'depth':depth,
+        result.append({**node,'sourceText':norm(node['text']),'text':display_text,'depth':depth,
                        'emphasis':[norm(s) for s in emph]})
     return result
 

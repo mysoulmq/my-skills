@@ -18,9 +18,15 @@
 
 每题独立保存 `knowledgeRecall`：`id / route / scopeReason / sourceScope / teacherExampleRefs / nodes`。route 为 `handout / outline-branch / outline-overview`。node 包含 `id / parentId / text / source / emphasis`；source含 `kind`、讲义`unitId`或框架`deck/page/shapeId`及`quote`。讲义节点应来自已核定的源段落；不得先改写再把改写稿登记成来源。
 
+单独摘取的讲义标题不带失去上下文的章节序号，例如本题回看标题不显示“2、”。核定这是原讲义的上级排序号后，在该根节点设置`display:{omitSourceNumber:true}`；共享编译器只在显示层去掉受支持的标题序号，records中的`text`及`source.quote`保留完整原文。测量、写入和实际文件检查统一使用编译后的`text`，另保留`sourceText`供溯源。不得直接删改来源来迁就屏幕，也不得据此移除正文①②③、教材课框名称、年份、单位、数量或任意知识内容。
+
 `knowledge_recall.compile_recall(record, catalog)`校验真实来源节点、完整文字和父子关系。catalog从已核定讲义单元及实际框架PPT独立读取，键为`unit:ID`或`ppt:DECK:PAGE:SHAPEID`，值为原文；不能从候选record反向构造catalog让它自证。校验允许排版空白变化，不允许删词或自行合并知识内容。语义范围仍由独立教研审查。
 
 ## 写入与验收
+
+整个相关知识区域使用可编辑的浅色背景板，与“审题”和下方“审材料”分隔。这是区域底板，不是给每句话加黄色文字高亮；材料概括列仍无黄底，答案页不因此增加底板。每张知识回看续页同样保留。默认浅蓝`EAF2F8`、无粗边，正文前后层级及教师原模板不变。
+
+适配器创建完回看区对象后，调用`native_recall_background.add_recall_background(slide, layout['boxes'], shape_id=3900, name='知识回看背景')`；使用本页实际盒子，四周留4 pt内边距，返回底板对象信息。ID须在本页唯一。底板在文字与连线后，不能覆盖正文，也不能扩大到审材料区；容量测量须把这4 pt边距计入原有知识区预留，不靠压字挤出空间。底板可初始显示，或与整块知识一起揭示；不能在文字之后才出现遮住内容。
 
 `native_recall_layout.plan_recall`提供手稿式层级或框架树的实际测量布局，保留父子关系；使用模板对应字体与有界字号，不能无差别套一个小字号。`native_text.write_text`写入可编辑段落、原生行距和已核定的标记，同时处理连续破折号。知识区和分析区联合测量：先算完整分析组的高度，再对完整知识区做有界紧凑试排，最后决定是否续页，不先把知识区无限撑大。过高时保留完整语义分支分续页，并重算对应分析容量，不能暗中删知识。
 
@@ -30,7 +36,7 @@
 python scripts/check_recall_delivery.py final.pptx recall-records.json source-catalog.json recall-map.json --report recall-check.json
 ```
 
-records文件为`{"records":[knowledgeRecall,...]}`。mapping是每页对象映射数组：`page / recallId / nodeShapes`；`nodeShapes`为node ID到实际shape ID。可附`emphasisShapes`（shapeId、role、focus、emphasis，第二列role为analysis-material并禁止高亮）、`unmarkedShapeIds`（材料/设问）。答案页可省略recallId，附`noHighlight`和`sectionTexts`，检查无新增黄底及原理/应用真正另起段。检查来源与落盘传递，不替代逐页视觉、范围选择或动画验收。
+records文件为`{"records":[knowledgeRecall,...]}`。mapping是每页对象映射数组：`page / recallId / nodeShapes / backgroundShapeId`；`nodeShapes`为node ID到实际shape ID，`backgroundShapeId`是该页整块知识底板的实际ID。检查器要求知识页有真实浅色底板，位于文字后并包住本页全部知识节点；不能只在数据里写背景色。可附`emphasisShapes`（shapeId、role、focus、emphasis，第二列role为analysis-material并禁止高亮）、`unmarkedShapeIds`（材料/设问）。答案页可省略recallId，附`noHighlight`和`sectionTexts`，检查无新增黄底及原理/应用真正另起段。检查来源与落盘传递，不替代逐页视觉、范围选择或动画验收。
 
 知识回看跨续页时，records仍保留完整来源节点；各页`nodeShapes`只列本页节点，检查器以全部续页的并集核对完整覆盖，并逐次验证重复显示的节点。不能为通过检查裁短records；未知节点和跨页仍缺失的节点均失败。只有知识回看、暂无材料配对的分析续页也须记录审题`auditShapeIds`并保持初始可见。
 
@@ -39,3 +45,5 @@ records文件为`{"records":[knowledgeRecall,...]}`。mapping是每页对象映�
 `native_recall_layout.fit_recall(..., max_height, base_font=13.5, min_font=12)`按完整分析组高度倒算知识区目标高度，在960×540 pt画布先试原舒适档，再试知识区专用紧凑档：行距1.10、节点间距2 pt、节点附加高度1 pt，字号每次0.5 pt降到12 pt。以上是本模板回看区的配置起点，其他画布同比缩放；不是正文/审材料的统一小字号。先压无效留白再降字号，不同时压缩所有区域。每个box返回的lineSpacing必须实际写入PPT，不能测量按紧凑档、落盘仍是旧行距。
 
 选择满足容量的最大字号，保存profile、完整高度及fits；fits=false说明可读下限仍不够，保留源内容并分同模板续页。不能为了全塞同页继续缩字。实际渲染验收关注投屏辨认、父子分隔、连续破折号，以及下方两列能否按组完整呈现；不以页数更少自动判通过。
+
+小样视觉探针至少核对：知识区整块底板是否清楚分区，独立标题是否残留失去上下文的源序号，正文原理编号是否仍完整，底板是否覆盖或侵入其他区域。不能只看文字未裁切、程序通过就判视觉通过。

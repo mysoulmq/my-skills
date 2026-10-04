@@ -8,6 +8,7 @@ from check_analysis_screen import check as analysis_check
 from check_recall_delivery import check as recall_check
 from native_text import write_text,A,P
 from analysis_presentation import compile_question
+from native_recall_background import add_recall_background,check_recall_background
 
 def shape(ident,text,focus=()):
  s=E.Element('{'+P+'}sp');n=E.SubElement(s,'{'+P+'}nvSpPr');E.SubElement(n,'{'+P+'}cNvPr',id=str(ident))
@@ -22,6 +23,15 @@ def write_deck(path,roots):
    E.SubElement(rels,'{'+Q+'}Relationship',Id='r'+str(i),Target=f'slides/slide{i}.xml',Type=R+'/slide')
    z.writestr(f'ppt/slides/slide{i}.xml',E.tostring(r))
   z.writestr('ppt/presentation.xml',E.tostring(pres));z.writestr('ppt/_rels/presentation.xml.rels',E.tostring(rels))
+
+def recall_slide(*contents):
+ root=E.Element('{'+P+'}sld');cs=E.SubElement(root,'{'+P+'}cSld');tree=E.SubElement(cs,'{'+P+'}spTree');boxes=[]
+ for i,s in enumerate(contents):
+  pr=E.SubElement(s,'{'+P+'}spPr');xf=E.SubElement(pr,'{'+A+'}xfrm')
+  E.SubElement(xf,'{'+A+'}off',x='127000',y=str((10+i*30)*12700));E.SubElement(xf,'{'+A+'}ext',cx='2540000',cy='254000')
+  boxes.append({'x':10,'y':10+i*30,'w':200,'h':20});tree.append(s)
+ add_recall_background(root,boxes)
+ return root
 
 class OpeningAuditTests(unittest.TestCase):
  def test_marks_must_be_on_first_slide_and_star_must_keep_source(self):
@@ -74,8 +84,8 @@ class OpeningAuditTests(unittest.TestCase):
   catalog={'unit:'+n['id']:n['text'] for n in record['nodes']}
   roots=[];mapping=[]
   for i,n in enumerate(record['nodes'],1):
-   root=E.Element('{'+P+'}sld');root.append(shape(1,n['text']));roots.append(root)
-   mapping.append({'page':i,'recallId':'r','nodeShapes':{n['id']:1}})
+   root=recall_slide(shape(1,n['text']));roots.append(root)
+   mapping.append({'page':i,'recallId':'r','nodeShapes':{n['id']:1},'backgroundShapeId':3900})
   with tempfile.TemporaryDirectory() as d:
    p=Path(d)/'recall.pptx';write_deck(p,roots)
    self.assertTrue(recall_check(p,[record],catalog,mapping)['pass'])
@@ -83,3 +93,29 @@ class OpeningAuditTests(unittest.TestCase):
    self.assertTrue(any('no actual recall delivery b' in e for e in result['errors']))
    mapping[1]['nodeShapes']={'invented':1}
    self.assertTrue(any('unknown recall nodes' in e for e in recall_check(p,[record],catalog,mapping)['errors']))
+
+ def test_recall_heading_display_omits_ordinal_without_changing_source(self):
+  record={'id':'r','route':'handout','scopeReason':'独立知识回看','sourceScope':'讲义','nodes':[
+   {'id':'h','parentId':None,'text':'2、个人与社会','source':{'kind':'handout','unitId':'h','quote':'2、个人与社会'},'display':{'omitSourceNumber':True}},
+   {'id':'p','parentId':'h','text':'①客观条件是前提。','source':{'kind':'handout','unitId':'p','quote':'①客观条件是前提。'},'emphasis':['客观条件']}]}
+  catalog={'unit:h':'2、个人与社会','unit:p':'①客观条件是前提。'}
+  mapping=[{'page':1,'recallId':'r','nodeShapes':{'h':1,'p':2},'backgroundShapeId':3900}]
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'heading.pptx';root=recall_slide(shape(1,'个人与社会'),shape(2,'①客观条件是前提。',['客观条件']))
+   write_deck(p,[root]);self.assertTrue(recall_check(p,[record],catalog,mapping)['pass'])
+   root=recall_slide(shape(1,'2、个人与社会'),shape(2,'①客观条件是前提。',['客观条件']));write_deck(p,[root])
+   self.assertTrue(any('recall text changed h' in e for e in recall_check(p,[record],catalog,mapping)['errors']))
+
+ def test_background_is_real_pale_shape_behind_and_around_all_nodes(self):
+  root=recall_slide(shape(1,'标题'),shape(2,'原理'))
+  self.assertEqual(check_recall_background(root,[1,2],3900),[])
+  self.assertTrue(check_recall_background(root,[1,2],None))
+  tree=root.find('.//{'+P+'}spTree');panel=tree[0]
+  tree.remove(panel);tree.append(panel)
+  self.assertTrue(any('behind' in e for e in check_recall_background(root,[1,2],3900)))
+  tree.remove(panel);tree.insert(0,panel)
+  ext=panel.find('{'+P+'}spPr/{'+A+'}xfrm/{'+A+'}ext');ext.set('cy','12700')
+  self.assertTrue(any('enclose' in e for e in check_recall_background(root,[1,2],3900)))
+  root=recall_slide(shape(1,'标题'));panel=root.find('.//{'+P+'}spTree')[0]
+  panel.find('{'+P+'}spPr/{'+A+'}solidFill/{'+A+'}srgbClr').set('val','FFFFFF')
+  self.assertTrue(any('pale' in e for e in check_recall_background(root,[1],3900)))
