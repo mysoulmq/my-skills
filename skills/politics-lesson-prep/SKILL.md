@@ -29,7 +29,7 @@ description: Use when preparing a complete senior-high politics lesson from hand
 
 ## 用户指定的原生综合题模板
 
-生成综合题前先检查工作区 `.politics-lesson-prep/essay-template.json`。若存在 `mode: native-reference`，必须执行[原生综合题模板](references/native-essay-template.md)：直接复制该 PPT 的分析页／答案页并就地替换内容，保留原布局、字体、配色和图形；这是对后文通用题目渲染路径的优先覆盖。不能只提取配色后重新绘制，也不能把未经用户认可的简化版布局作为“修复”。通用 `render_questions.mjs` 会拒绝该模式，应切换原生模板适配继续工作，不删除配置或复制旧脚本绕过。参考页不是可直接交付的新题，必须替换旧题正文、知识图片及备注，核对动画目标和实际可读性。
+生成综合题前先检查工作区 `.politics-lesson-prep/essay-template.json`。若存在 `mode: native-reference`，必须执行[原生综合题模板](references/native-essay-template.md)：直接复制该 PPT 的分析页／答案页并就地替换内容，保留原布局、字体、配色和图形；这是对后文通用题目渲染路径的优先覆盖。不能只提取配色后重新绘制，也不能把未经用户认可的简化版布局作为“修复”。通用 `render_questions.mjs` 会拒绝该模式，应切换原生模板适配继续工作，不删除配置或复制旧脚本绕过。分析页先为相关知识保留原模板区域，再以有界字号试排多组同页；调用原生模板文档中的共享容量与连续破折号接口，不能一组一页机械拆分。参考页不是可直接交付的新题，必须替换旧题正文、知识图片及备注，核对动画目标和实际可读性。
 
 ## 加工内容前读取适用教师转换样例
 

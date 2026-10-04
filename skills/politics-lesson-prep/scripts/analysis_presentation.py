@@ -72,3 +72,97 @@ No point-count threshold. Oversize groups must be reflowed explicitly, not shrun
         current.append(g['index']);used+=height
     if current:pages.append(current)
     return pages
+
+
+def fit_analysis_pages(indices, measure, *, base_font, min_font,
+                       recall_top, recall_reserved_height, content_bottom,
+                       region_gap=12, group_gap=12, recall_padding=6):
+    """Fit consecutive paired groups, reserving the teacher's knowledge region first.
+
+    measure(indices, font_pt) returns groups (paginate's measured entries) and
+    recallHeight, including actual wrapping/line spacing/insets. Recall font is
+    fixed by the adapter; only the two analysis columns use font_pt. Units: pt.
+    Try at most 2pt reduction in 1pt steps; minimize pages, then prefer larger type.
+    Returns page indices, chosen font and reserved geometry. No content rewriting.
+    """
+    values=(base_font,min_font,recall_top,recall_reserved_height,content_bottom,
+            region_gap,group_gap,recall_padding)
+    if any(not isinstance(x,(int,float)) or not math.isfinite(x) for x in values):
+        raise ValueError('Invalid fit geometry')
+    if (not indices or len(set(indices))!=len(indices) or min_font<=0 or
+        not 0<=base_font-min_font<=2 or recall_reserved_height<=0 or
+        min(region_gap,group_gap,recall_padding)<0):
+        raise ValueError('Invalid bounded font policy or analysis indices')
+    fonts=[base_font-i for i in range(math.floor(base_font-min_font)+1)]
+    if fonts[-1]!=min_font:fonts.append(min_font)
+    candidates=[]
+    for font in fonts:
+        best={len(indices):[]}
+        for start in range(len(indices)-1,-1,-1):
+            options=[]
+            for end in range(start+1,len(indices)+1):
+                if end not in best:continue
+                subset=list(indices[start:end]);m=measure(subset,font)
+                rh=m['recallHeight'];groups=m['groups']
+                if not isinstance(rh,(int,float)) or not math.isfinite(rh) or rh<=0:
+                    raise ValueError('Invalid measured recall height')
+                if [g['index'] for g in groups]!=subset:
+                    raise ValueError('Measurement changed analysis order or coverage')
+                recall_height=max(recall_reserved_height,rh+recall_padding)
+                analysis_top=recall_top+recall_height+region_gap
+                capacity=content_bottom-analysis_top
+                if capacity<=0:continue
+                # Validate measurements even when the group cannot fit.
+                heights=[max(g['bodyHeight'],g['knowledgeHeight']) for g in groups]
+                if any(not math.isfinite(v) or v<=0 for g in groups
+                       for v in (g['bodyHeight'],g['knowledgeHeight'])):
+                    raise ValueError('Invalid measured group height')
+                if sum(heights)+group_gap*(len(groups)-1)>capacity:continue
+                page={'indices':subset,'fontPt':font,'recallTop':recall_top,
+                      'recallHeight':recall_height,'analysisTop':analysis_top,
+                      'analysisCapacity':capacity}
+                options.append([page]+best[end])
+            if options:best[start]=min(options,key=lambda p:(len(p),-len(p[0]['indices'])))
+        if 0 in best:candidates.append(best[0])
+    if not candidates:
+        raise ValueError('No readable paired layout fits; reflow complete semantic groups, never overlap or delete recall')
+    return min(candidates,key=lambda p:(len(p),-p[0]['fontPt']))
+
+
+def normalize_heading_dashes(shape):
+    """Keep Chinese —— in one zero-spacing run with a continuous dash font.
+
+    Accepts an lxml/ElementTree native shape. Only the two teaching headings are
+    touched; preserve other text, paragraph properties and native geometry.
+    Arial's em dash avoids the separated dash glyphs of some KaiTi fallbacks.
+    Rendering on the target viewer remains part of template visual verification.
+    """
+    import copy
+    A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
+    changed=0
+    for p in shape.iter(A+'p'):
+        text=''.join(t.text or '' for t in p.iter(A+'t'))
+        match=re.fullmatch(r'(审题|审材料)\s*[-—–－―\s]+',text)
+        if not match:continue
+        runs=p.findall(A+'r')
+        if not runs:continue
+        pp=p.find(A+'pPr')
+        if pp is None:
+            pp=p.makeelement(A+'pPr',{});p.insert(0,pp)
+        pp.set('algn','l')
+        props=runs[0].find(A+'rPr')
+        for r in list(p):
+            if r.tag in (A+'r',A+'br',A+'fld'):p.remove(r)
+        for value,is_dash in ((match[1],False),('——',True)):
+            r=p.makeelement(A+'r',{});rp=copy.deepcopy(props) if props is not None else p.makeelement(A+'rPr',{})
+            if is_dash:
+                rp.set('spc','0');rp.set('kern','0')
+                for tag in ('latin','ea','cs','sym'):
+                    for old in list(rp.findall(A+tag)):rp.remove(old)
+                for tag in ('latin','ea','cs'):
+                    rp.append(p.makeelement(A+tag,{'typeface':'Arial'}))
+            r.append(rp);t=p.makeelement(A+'t',{});t.text=value;r.append(t)
+            # endParaRPr must remain last in the paragraph.
+            end=p.find(A+'endParaRPr');p.insert(list(p).index(end) if end is not None else len(p),r)
+        changed+=1
+    return changed
