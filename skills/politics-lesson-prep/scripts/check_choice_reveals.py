@@ -45,6 +45,20 @@ def check(path, choices=None):
                 nv=sp.find('.//'+P+'cNvPr')
                 if any((t.text or '').strip() for t in sp.iter(A+'t')) and (nv is None or nv.get('name') not in allowed):
                     errors.append(f'page {page}: unexpected text object outside choice template; inspect for visible explanation')
+            boxes={}
+            for sp in root.iter(P+'sp'):
+                nv=sp.find('.//'+P+'cNvPr');xf=sp.find('./'+P+'spPr/'+A+'xfrm')
+                if nv is not None and xf is not None:
+                    off=xf.find(A+'off');ext=xf.find(A+'ext')
+                    if off is not None and ext is not None:
+                        boxes[nv.get('name')]=(int(off.get('x')),int(off.get('y')),int(ext.get('cx')))
+            for name in annotations:
+                option=prefix+'-option-'+name.rsplit('-',1)[1]
+                if name not in boxes or option not in boxes:
+                    errors.append(f'page {page}: missing option/annotation geometry');continue
+                ax,ay,_=boxes[name];ox,oy,ow=boxes[option]
+                if ax<ox+ow or abs(ay-oy)>6*9525:
+                    errors.append(f'page {page}: explanation must be beside the option on its right, never below')
             steps=[[names[answer]],*[[names[n]] for n in annotations]]
             if tree(root.find(P+'timing'))!=tree(ET.fromstring(_timing(steps))):
                 errors.append(f'page {page}: answer/annotations must use the click-only entrance template; unanimated or changed timing')

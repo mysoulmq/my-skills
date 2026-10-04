@@ -15,6 +15,10 @@ class ChoiceRevealsTests(unittest.TestCase):
         rows=[('q1-choice-1-answer','答案 B'),('q1-choice-1-annotation-0','概念混用')]+[(f'q1-choice-1-option-{i}',o['key']+' '+o['text']) for i,o in enumerate(self.q['options'])]
         for i,(name,text) in enumerate(rows,1):
             sp=ET.SubElement(spTree,P+'sp');nv=ET.SubElement(sp,P+'nvSpPr');ET.SubElement(nv,P+'cNvPr',id=str(i),name=name)
+            xf=ET.SubElement(ET.SubElement(sp,P+'spPr'),A+'xfrm')
+            x=800*9525 if 'annotation' in name else 48*9525
+            y=(200 if mode=='below' and 'annotation' in name else 100)*9525
+            ET.SubElement(xf,A+'off',x=str(x),y=str(y));ET.SubElement(xf,A+'ext',cx=str(700*9525 if 'option' in name else 300*9525),cy=str(50*9525))
             if mode=='leak' and name.endswith('option-0'):text+=' 概念混用'
             ET.SubElement(sp,A+'t').text=text
         steps=[[{'id':'1','type':'sp'}],[{'id':'2','type':'sp'}]]
@@ -35,6 +39,8 @@ class ChoiceRevealsTests(unittest.TestCase):
         self.write('automatic');self.assertFalse(check(self.deck)['pass'])
     def test_explanation_in_visible_option_rejected(self):
         self.write('leak');self.assertFalse(check(self.deck,{'questions':[self.q]})['pass'])
+    def test_below_option_explanation_rejected_even_with_animation(self):
+        self.write('below');self.assertFalse(check(self.deck)['pass'])
     def test_missing_choice_rejected(self):
         self.write();q={**self.q,'id':'q2'}
         self.assertFalse(check(self.deck,{'questions':[self.q,q]})['pass'])

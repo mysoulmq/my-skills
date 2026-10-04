@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {validateChoice,choiceDiagnosticText} from './choice_contract.mjs';
+import {choiceColumns} from './choice_layout.mjs';
 import {choiceSteps} from './choice_animation.mjs';
 import {choiceNotes} from './choice_notes.mjs';
 import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont,hasFont} from './question_style.mjs';
@@ -31,13 +32,11 @@ for(const q of data.questions){
   const diagnostic=choiceDiagnosticText;
   function rowLayout(o){
     const text=`${o.key}  ${o.text}`,natural=textWidth(text,{size:optionSize,font:choiceFonts.option});
-    const optionH=measure(text,1180,optionSize,choiceFonts.option);
-    if(o.verdict==='supported')return {height:optionH};
-    const dx=48+natural+48,dw=1230-dx;
-    const inline=dw>=400 && optionH<=optionSize*1.25+9;
-    const x=inline?dx:88,w=inline?dw:1130,dy=inline?3:optionH+6;
-    const noteH=measure(diagnostic(o),w,21);
-    return {x,w,dy,height:Math.max(optionH,dy+noteH),inline};
+    const columns=choiceColumns(natural);
+    const optionH=measure(text,columns.optionW,optionSize,choiceFonts.option);
+    if(o.verdict==='supported')return {...columns,height:optionH};
+    const noteH=measure(diagnostic(o),columns.w,21);
+    return {...columns,height:Math.max(optionH,columns.dy+noteH)};
   }
   function fit(){
     stemH=segmentHeight(stemSegments(),1190,{size:stemSize,lineSpacing:1.25});
@@ -50,7 +49,7 @@ for(const q of data.questions){
   let y=108+stemH+28;
   const steps=choiceSteps(id,q.options),spare=590-(y+heights.reduce((a,b)=>a+b,0)+3*18),rowGap=18+Math.min(18,spare/3);
   for(const [i,o] of q.options.entries()){
-    put(s,`${o.key}  ${o.text}`,48,y,1180,{size:optionSize,font:choiceFonts.option,lineSpacing:1.25,name:`${id}-option-${i}`});
+    put(s,`${o.key}  ${o.text}`,48,y,layouts[i].optionW,{size:optionSize,font:choiceFonts.option,lineSpacing:1.25,name:`${id}-option-${i}`});
     if(o.verdict!=='supported'){
       const color=o.verdict==='false'?'#B42318':T.colors.prompt;
       const box=layouts[i];
