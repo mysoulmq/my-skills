@@ -2,6 +2,7 @@ import sys, unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'skills/politics-lesson-prep/scripts'))
 from check_source_delivery import validate
+from assemble import require_source_inventory
 
 class DeliveryTests(unittest.TestCase):
     def fixture(self):
@@ -31,3 +32,36 @@ class DeliveryTests(unittest.TestCase):
         r,q,p,t=self.fixture();self.assertFalse(validate(r,q,[],t)['pass'])
     def test_changed_material_rejected(self):
         r,q,p,t=self.fixture();q[0]['material']='自编材料';self.assertFalse(validate(r,q,p,t)['pass'])
+
+    def test_source_label_alone_does_not_count_as_question(self):
+        r,q,p,t=self.fixture();t[0]='（某地模拟）另一道题'
+        result=validate(r,q,p,t)
+        self.assertFalse(result['pass']);self.assertEqual(result['missingQuestionIds'],['q'])
+        self.assertEqual(result['deliveredCount'],0)
+
+    def test_choice_option_must_reach_actual_slide(self):
+        r,q,p,t=self.fixture()
+        for x in r+q:x['options']=['选项甲','选项乙']
+        t[0]+='选项甲'
+        self.assertTrue(any('option 2' in e for e in validate(r,q,p,t)['errors']))
+        t[0]+='选项乙';self.assertTrue(validate(r,q,p,t)['pass'])
+
+    def test_upstream_omission_is_not_excused_by_optional(self):
+        r,q,p,t=self.fixture();r.append({**r[0],'id':'c','prompt':'另一小问'})
+        result=validate(r,q,p,t)
+        self.assertFalse(result['pass']);self.assertEqual(result['unassignedSourceIds'],['c'])
+        registry={'sourceRecords':r,'questions':q+[{'id':'q2','optional':True}]}
+        with self.assertRaisesRegex(ValueError,'missing=.*q2'):
+            require_source_inventory(registry,p)
+
+    def test_only_diagnostic_page_does_not_replace_teaching(self):
+        r,q,p,t=self.fixture();p[0]['stage']='diagnosis'
+        with self.assertRaisesRegex(ValueError,'missing'):
+            require_source_inventory({'sourceRecords':r,'questions':q},p)
+
+    def test_question_assembly_requires_independent_inventory(self):
+        with self.assertRaisesRegex(ValueError,'source-registry'):
+            require_source_inventory(None,[{'questionId':'q'}])
+        require_source_inventory(None,[])
+        r,q,p,t=self.fixture()
+        require_source_inventory({'sourceRecords':r,'questions':q},p)

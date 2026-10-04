@@ -20,6 +20,8 @@
 
 仅有一种资料时，缺少的源PPT参数传 `-`，相应题目/页面数组为空。只输出有实际内容的视图，不生成空白课件。
 
+有题目页时，`assemble.py` 必须追加 `--source-registry source-registry.json`，传入从全部原始输入建立的 registry（综合题及选择题的全部独立小问），不能从已筛选 questions 反向生成。程序先核 registry 与教学题页ID集合，诊断页不抵正式讲题页；再对实际完整/题目视图自动运行来源门禁并保存报告。纯讲义不要求 registry。
+
 脚本不判断教学顺序是否合理，不能把任意sequence当作教研通过。讲义覆盖使用依赖检查器仅检查讲义正文；题目和方案的语义复核独立执行。对合并候选用 Presentations 的包完整性、布局检查与终检，动画按 [模板与验证复用](animation-validation.md)检查，不每轮重复 WPS 操作；首次认证或兼容性异常才检查真实初始态、点击顺序和最后一步。动画对象隐藏不等于整张幻灯片隐藏。终检输出父目录须预先存在；临时目录路径使用realpath，避免macOS /tmp别名误判。
 
 中文DOCX预览若出现空白或方块，先核对实际OOXML中文字是否齐全。可在构建目录创建临时fontconfig配置，指向本机已经安装的中文字体目录，使用 `FONTCONFIG_FILE` 运行捆绑render_docx.py；不安装字体、不修改系统字体配置，也不把缺字预览当作已完成视觉验收。
@@ -53,6 +55,8 @@
 原生模板及通用路径均须执行：
 `python check_source_delivery.py final.pptx source-registry.json final-view-mapping.json --report source-delivery.json`
 其中registry含`sourceRecords`与`questions`，字段见data.md；mapping为该实际视图的页面数组，各题页含`questionId,page`。完整和题目视图各跑一次；程序读取PPT实际播放顺序，核对来源记录归属、精确同题重复、原题身份与每题各页题源。该程序不判断语义等价，不替代材料/答案完整覆盖与教研检查。
+
+来源门禁同时核对实际设问、全部选项和默认放映可见性，报告原始出现数、去重题数、实际设问落盘数、缺题ID和未归属来源ID。registry不能自行证明原文件未漏提取，仍须独立对照原文题号及全部小问；原始清单、教学底稿、两份最终视图逐层对账，不能只报“全部通过”。`check_question_slides.py`另检查完整材料与答案；采用knowledgeRecall的题也必须通过实际分析对象检查，不能因回看与分析短句不同而跳过知识落盘验收。
 
 所有最终检查与预览必须指向同一版文件：记录最终PPT/DOCX的路径与SHA256，生成新文件后旧映射、旧预览、旧报告自动失效。交付前重算哈希核对，任何重排、改字或重新导出后复核受影响内容与所有页码引用；不能用私有目录中同名或上一版通过记录证明本版通过。缺少对应的真实渲染/播放证据仍标未验证。
 

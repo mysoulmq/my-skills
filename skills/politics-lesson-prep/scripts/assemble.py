@@ -12,6 +12,17 @@ from compact_notes import rewrite
 from score_prediction import attach_notes
 
 
+def require_source_inventory(registry, question_pages):
+    """Compare the pre-selection inventory with rendered teaching pages."""
+    rendered={p['questionId'] for p in question_pages if p.get('stage','teaching')=='teaching'}
+    if registry is None:
+        if question_pages: raise ValueError('Question delivery requires --source-registry from all original inputs')
+        return
+    expected={q['id'] for q in registry['questions']}
+    if rendered!=expected:
+        raise ValueError(f'Source inventory mismatch: missing={sorted(expected-rendered)}, unexpected={sorted(rendered-expected)}')
+
+
 def manifests(knowledge_pptx, question_pptx, question_pages, sequence, plan):
     total=0
     if knowledge_pptx!='-':
@@ -54,12 +65,17 @@ def argument_parser():
     p=argparse.ArgumentParser()
     for name in ['knowledge_pptx','question_pptx','question_pages','questions','plan','sequence','output']:p.add_argument(name)
     p.add_argument('--with-docx',action='store_true',help='Export Word only when explicitly requested')
+    p.add_argument('--source-registry',help='Pre-selection sourceRecords and all canonical questions; required when question pages exist')
     return p
 
 
 if __name__=='__main__':
     a=argument_parser().parse_args();load=lambda f:json.loads(Path(f).read_text())
     from check_choice_reveals import check as check_choices
+    from check_source_delivery import check as check_sources
+    question_pages=load(a.question_pages)
+    registry=load(a.source_registry) if a.source_registry else None
+    require_source_inventory(registry,question_pages)
     if a.question_pptx!='-':
         visibility=check_choices(a.question_pptx)
         if not visibility['pass']:raise ValueError(visibility['errors'])
@@ -70,12 +86,16 @@ if __name__=='__main__':
     if not result['pass']:raise ValueError(result['errors'])
     out=Path(a.output);out.mkdir(parents=True,exist_ok=False)
     mappings={}
-    for name,manifest in manifests(a.knowledge_pptx,a.question_pptx,load(a.question_pages),load(a.sequence),plan).items():
+    for name,manifest in manifests(a.knowledge_pptx,a.question_pptx,question_pages,load(a.sequence),plan).items():
         mappings[name]=compose(manifest,out/(name+'.pptx'))
         attach_notes(plan,load(a.questions),mappings[name])
         rewrite(out/(name+'.pptx'),mappings[name],plan,out/(name+'.pptx'))
         visibility=check_choices(out/(name+'.pptx'))
         if not visibility['pass']:raise ValueError(visibility['errors'])
+        if registry is not None and any(p.get('questionId') for p in mappings[name]):
+            coverage=check_sources(out/(name+'.pptx'),registry,mappings[name])
+            (out/(name+'-source-delivery.json')).write_text(json.dumps(coverage,ensure_ascii=False,indent=2))
+            if not coverage['pass']:raise ValueError(coverage['errors'])
     # Build metadata is private; default deliverables are the available PPT views.
     (out/'page-mapping.json').write_text(json.dumps(mappings,ensure_ascii=False,indent=2))
     if a.with_docx:

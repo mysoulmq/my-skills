@@ -18,7 +18,7 @@ def identity(record):
             tuple(norm(x) for x in record.get('options', [])))
 
 def validate(records, questions, pages, texts):
-    errors=[]; raw={}; groups={}; owners={}; seen=set()
+    errors=[]; raw={}; groups={}; owners={}; seen=set(); delivered=set()
     if not records or not questions: errors.append("empty source registry or question set")
     for r in records:
         if r['id'] in raw: errors.append('duplicate source record: '+r['id'])
@@ -46,16 +46,27 @@ def validate(records, questions, pages, texts):
                 if len(versions)>1: errors.append(qid+': source variants require reconciliation: '+field)
         selected=[p for p in pages if p.get('questionId')==qid]
         if not selected: errors.append(qid+': absent from final deck')
+        visible=[]
         for p in selected:
             n=p['page']
-            if not isinstance(n,int) or n<1 or n>len(texts): errors.append(qid+': invalid page'); continue
+            if type(n)!=int or n<1 or n>len(texts): errors.append(qid+': invalid page'); continue
+            visible.append(norm(texts[n-1]))
             for label in labels:
                 if label not in norm(texts[n-1]): errors.append(f'{qid}: P{n} missing original source label')
+        # Mapping an ID to an unrelated page is not delivery. Check the actual
+        # task and every option, including source questions without a label.
+        pool=''.join(visible)
+        expected=[('prompt',q['prompt'])]+[(f'option {i}',v) for i,v in enumerate(q.get('options',[]),1)]
+        missing=[name for name,value in expected if not norm(value) or norm(value) not in pool]
+        for name in missing: errors.append(f'{qid}: missing visible source {name}')
+        if visible and not missing: delivered.add(qid)
     for p in pages:
         if p.get('questionId') and p['questionId'] not in qids:
             errors.append('unknown mapped question: '+p['questionId'])
     if seen!=set(raw): errors.append('unassigned source records: '+','.join(sorted(set(raw)-seen)))
-    return {'pass':not errors,'errors':errors,'rawCount':len(records),'uniqueCount':len(groups)}
+    return {'pass':not errors,'errors':errors,'rawCount':len(records),'uniqueCount':len(groups),
+            'questionCount':len(qids),'deliveredCount':len(delivered),
+            'missingQuestionIds':sorted(qids-delivered),'unassignedSourceIds':sorted(set(raw)-seen)}
 
 def check(pptx, registry, mapping):
     data=Path(pptx).read_bytes()
@@ -63,6 +74,10 @@ def check(pptx, registry, mapping):
     order=ordered_slides(files)
     texts=[''.join(t.text or '' for t in ET.fromstring(files[n]).iter(A+'t')) for n in order]
     result=validate(registry['sourceRecords'],registry['questions'],mapping,texts)
+    hidden=[i for i,n in enumerate(order,1) if ET.fromstring(files[n]).get('show') in ('0','false')]
+    if hidden:
+        result['errors'].append('hidden slides are not normal playback delivery: '+','.join(map(str,hidden)))
+        result['pass']=False
     result.update(sha256=hashlib.sha256(data).hexdigest(),slideCount=len(order),pptx=str(Path(pptx).resolve()))
     return result
 

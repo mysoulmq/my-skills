@@ -86,11 +86,25 @@ def check(pptx,questions,mapping):
                     expected=norm(score_text(item[value_key],item.get(label_key,default_label)))
                     if expected not in answers:errors.append(f'{q["id"]}: answer {i+1} missing visible {value_key}')
         analysis=''.join(grouped.get('analysis',[]))
+        if q.get('analysis') and not grouped.get('analysis'):
+            errors.append(f'{q["id"]}: missing analysis pages')
         if grouped.get('analysis'):
             if norm(q['task']) not in analysis:errors.append(f'{q["id"]}: missing task')
             for i,item in enumerate(q['analysis']):
-                for field in ('evidence','principle'):
+                # Source-selected knowledge recall can show a broader source branch
+                # while the paired analysis shows a reviewed concise principle.
+                # check_analysis_screen validates that exact paired display text.
+                fields=('evidence',) if q.get('knowledgeRecall') else ('evidence','principle')
+                for field in fields:
                     if norm(item[field]) not in analysis:errors.append(f'{q["id"]}: analysis {i+1} missing {field}')
+    recalled=[q for q in questions['questions'] if q.get('knowledgeRecall')]
+    if recalled:
+        # A recall record never exempts paired knowledge from screen coverage.
+        # Verify the reviewed concise display in its actual analysis shape.
+        from check_analysis_screen import check as check_analysis
+        actual_mapping=[dict(p,page=p.get('page',p.get('sourceSlide'))) for p in mapping]
+        errors.extend(check_analysis(pptx,{'questions':recalled},
+            [p for p in actual_mapping if p.get('questionId') in {q['id'] for q in recalled}])['errors'])
     return {'pass':not errors,'errors':errors}
 
 
