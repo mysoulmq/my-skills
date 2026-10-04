@@ -32,6 +32,8 @@ python scripts/check_recall_delivery.py final.pptx recall-records.json source-ca
 
 records文件为`{"records":[knowledgeRecall,...]}`。mapping是每页对象映射数组：`page / recallId / nodeShapes`；`nodeShapes`为node ID到实际shape ID。可附`emphasisShapes`（shapeId、role、focus、emphasis，第二列role为analysis-material并禁止高亮）、`unmarkedShapeIds`（材料/设问）。答案页可省略recallId，附`noHighlight`和`sectionTexts`，检查无新增黄底及原理/应用真正另起段。检查来源与落盘传递，不替代逐页视觉、范围选择或动画验收。
 
+知识回看跨续页时，records仍保留完整来源节点；各页`nodeShapes`只列本页节点，检查器以全部续页的并集核对完整覆盖，并逐次验证重复显示的节点。不能为通过检查裁短records；未知节点和跨页仍缺失的节点均失败。只有知识回看、暂无材料配对的分析续页也须记录审题`auditShapeIds`并保持初始可见。
+
 ## 为审材料留空间的紧凑档
 
 `native_recall_layout.fit_recall(..., max_height, base_font=13.5, min_font=12)`按完整分析组高度倒算知识区目标高度，在960×540 pt画布先试原舒适档，再试知识区专用紧凑档：行距1.10、节点间距2 pt、节点附加高度1 pt，字号每次0.5 pt降到12 pt。以上是本模板回看区的配置起点，其他画布同比缩放；不是正文/审材料的统一小字号。先压无效留白再降字号，不同时压缩所有区域。每个box返回的lineSpacing必须实际写入PPT，不能测量按紧凑档、落盘仍是旧行距。

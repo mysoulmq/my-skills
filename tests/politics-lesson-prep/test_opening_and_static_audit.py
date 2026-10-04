@@ -5,6 +5,7 @@ from xml.etree import ElementTree as E
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'skills/politics-lesson-prep/scripts'))
 from check_opening_outline import check as opening_check
 from check_analysis_screen import check as analysis_check
+from check_recall_delivery import check as recall_check
 from native_text import write_text,A,P
 from analysis_presentation import compile_question
 
@@ -59,5 +60,26 @@ class OpeningAuditTests(unittest.TestCase):
    p=Path(d)/'a.pptx';write_deck(p,roots);self.assertTrue(analysis_check(p,q,mapping)['pass'])
    timing=E.SubElement(roots[1],'{'+P+'}timing');E.SubElement(timing,'{'+P+'}spTgt',spid='5');write_deck(p,roots)
    self.assertTrue(any('initially visible' in s for s in analysis_check(p,q,mapping)['errors']))
+   # A knowledge-only continuation still has an audit area; the lack of
+   # paired analysis blocks must not exempt it from the animation rule.
+   mapping[1]['analysisBlocks']=[]
+   self.assertTrue(any('initially visible' in s for s in analysis_check(p,q,mapping)['errors']))
    roots[1].remove(timing);write_deck(p,roots);mapping[0].pop('auditShapeIds')
    self.assertFalse(analysis_check(p,q,mapping)['pass'])
+
+ def test_recall_continuations_cover_full_record_without_false_missing_nodes(self):
+  record={'id':'r','route':'handout','scopeReason':'原理回看','sourceScope':'讲义','nodes':[
+   {'id':key,'parentId':None,'text':word,'source':{'kind':'handout','unitId':key,'quote':word}}
+   for key,word in [('a','完整第一分支'),('b','完整第二分支')]]}
+  catalog={'unit:'+n['id']:n['text'] for n in record['nodes']}
+  roots=[];mapping=[]
+  for i,n in enumerate(record['nodes'],1):
+   root=E.Element('{'+P+'}sld');root.append(shape(1,n['text']));roots.append(root)
+   mapping.append({'page':i,'recallId':'r','nodeShapes':{n['id']:1}})
+  with tempfile.TemporaryDirectory() as d:
+   p=Path(d)/'recall.pptx';write_deck(p,roots)
+   self.assertTrue(recall_check(p,[record],catalog,mapping)['pass'])
+   result=recall_check(p,[record],catalog,mapping[:1])
+   self.assertTrue(any('no actual recall delivery b' in e for e in result['errors']))
+   mapping[1]['nodeShapes']={'invented':1}
+   self.assertTrue(any('unknown recall nodes' in e for e in recall_check(p,[record],catalog,mapping)['errors']))

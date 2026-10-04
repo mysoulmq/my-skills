@@ -22,8 +22,9 @@ def check(pptx,questions,mapping):
         except ValueError as e:errors.append(f'{q["id"]}: {e}')
     for p in mapping:
         blocks=p.get('analysisBlocks',[])
-        if not blocks:continue
-        if p.get('kind')!='analysis':errors.append('analysisBlocks on a non-analysis page');continue
+        if p.get('kind')!='analysis':
+            if blocks:errors.append('analysisBlocks on a non-analysis page')
+            continue
         n=p['page']
         if type(n)!=int or not 1<=n<=len(order):errors.append('Invalid actual page');continue
         root=ET.fromstring(files[order[n-1]]);shapes={};shape_lines={};highlighted=set()
@@ -40,6 +41,7 @@ def check(pptx,questions,mapping):
                     targeted.update(n.get('id') for n in group.iter(P+'cNvPr'))
             if audit & targeted:
                 errors.append(f'P{n}: audit area must be initially visible without animation')
+        if not blocks:continue
         for sp in root.iter(P+'sp'):
             nv=sp.find('.//'+P+'cNvPr')
             if nv is not None:

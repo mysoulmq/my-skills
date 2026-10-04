@@ -65,3 +65,16 @@ class DeliveryTests(unittest.TestCase):
         require_source_inventory(None,[])
         r,q,p,t=self.fixture()
         require_source_inventory({'sourceRecords':r,'questions':q},p)
+
+    def test_empty_processed_set_cannot_erase_original_questions(self):
+        r,q,p,t=self.fixture()
+        with self.assertRaisesRegex(ValueError,'Every original'):
+            require_source_inventory({'sourceRecords':r,'questions':[]},[])
+
+    def test_original_record_assignment_is_checked_before_writing(self):
+        r,q,p,t=self.fixture();q[0]['sourceRecords']=['a']
+        with self.assertRaisesRegex(ValueError,'Every original'):
+            require_source_inventory({'sourceRecords':r,'questions':q},p)
+        q[0]['sourceRecords']=['a','a','b']
+        with self.assertRaisesRegex(ValueError,'Every original'):
+            require_source_inventory({'sourceRecords':r,'questions':q},p)

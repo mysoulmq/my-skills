@@ -10,6 +10,7 @@ from pptx_views import compose, ordered_slides
 from check_teaching import check
 from compact_notes import rewrite
 from score_prediction import attach_notes
+from collections import Counter
 
 
 def require_source_inventory(registry, question_pages):
@@ -19,8 +20,16 @@ def require_source_inventory(registry, question_pages):
         if question_pages: raise ValueError('Question delivery requires --source-registry from all original inputs')
         return
     expected={q['id'] for q in registry['questions']}
+    if len(expected)!=len(registry['questions']):
+        raise ValueError('Duplicate canonical question IDs in source inventory')
     if rendered!=expected:
         raise ValueError(f'Source inventory mismatch: missing={sorted(expected-rendered)}, unexpected={sorted(rendered-expected)}')
+    originals=[r['id'] for r in registry['sourceRecords']]
+    assigned=[rid for q in registry['questions'] for rid in q.get('sourceRecords',[])]
+    if not originals or len(set(originals))!=len(originals):
+        raise ValueError('Source inventory must contain nonempty, unique original records')
+    if Counter(originals)!=Counter(assigned):
+        raise ValueError('Every original source record must be assigned exactly once before assembly')
 
 
 def manifests(knowledge_pptx, question_pptx, question_pages, sequence, plan):
