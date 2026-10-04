@@ -18,21 +18,29 @@ FIELDS=('material','prompt','teacherAnswer','teacherMaterialColumn','teacherKnow
 def norm(s):
     return ''.join(s.split())
 
-def read_bank(workspace, ids=None):
+def read_bank(workspace, ids=None, task=None):
     path=Path(workspace)/'.politics-lesson-prep/teacher-examples.json'
     raw=path.read_bytes();bank=json.loads(raw)
     examples={e['id']:e for e in bank['examples']}
     if len(examples)!=len(bank['examples']):raise ValueError('Duplicate example IDs')
     result={'bankSha256':hashlib.sha256(raw).hexdigest()}
     if ids is None:
-        result['examples']=[{k:e[k] for k in ('id','title','taskFeatures')} for e in examples.values()]
+        result['examples']=[{**{k:e[k] for k in ('id','title','taskFeatures')}, 'uses':e.get('uses',['essay-analysis'])} for e in examples.values() if task is None or task in e.get('uses',['essay-analysis'])]
         return result
     if not ids or len(set(ids))!=len(ids) or any(i not in examples for i in ids):
         raise ValueError('Missing, duplicate or unknown selected example IDs')
     cache={}
     for key in ids:
-        for field in FIELDS:
-            value=examples[key][field];ref=value['source'];source=bank['sources'][ref['deck']]
+        example=examples[key]
+        if task and task not in example.get('uses',['essay-analysis']):raise ValueError(key+': example does not support requested task')
+        excerpts=example.get('excerpts')
+        if excerpts is not None:
+            if not excerpts or not any(e.get('role')=='input' for e in excerpts) or not any(e.get('role')=='output' for e in excerpts):
+                raise ValueError(key+': transformation requires input and output excerpts')
+            values=[(str(i),value) for i,value in enumerate(excerpts)]
+        else: values=[(field,example[field]) for field in FIELDS]
+        for field,value in values:
+            ref=value['source'];source=bank['sources'][ref['deck']]
             if ref['deck'] not in cache:
                 deck=(path.parent/source['file']).resolve()
                 if hashlib.sha256(deck.read_bytes()).hexdigest()!=source['sha256']:
@@ -57,7 +65,8 @@ def read_bank(workspace, ids=None):
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('workspace');p.add_argument('--ids',nargs='+');p.add_argument('--usage')
-    a=p.parse_args();result=read_bank(a.workspace,a.ids)
+    p.add_argument('--task',choices=['outline','essay-analysis','essay-answer','choice-explanation'])
+    a=p.parse_args();result=read_bank(a.workspace,a.ids,a.task)
     if a.usage:
         if not a.ids:raise ValueError('--usage requires the selected --ids')
         questions=json.loads(Path(a.usage).read_text())['questions']

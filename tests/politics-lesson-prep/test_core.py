@@ -26,6 +26,19 @@ class CoreTests(unittest.TestCase):
         activity['minutes']='不填写'
         self.assertFalse(checks.check({'questions':[]},plan)['pass'])
 
+    def test_ppt_support_plan_avoids_document_only_fields(self):
+        teaching={k:'具体教学内容' for k in ('ask','expected','explanation','check')}
+        plan={'mode':'ppt-support','lesson':'测试','designRationale':'知识先于应用',
+              'periods':[{'title':'概念辨析','activities':[{'id':'a1','questionIds':[],'teaching':teaching}]}]}
+        self.assertTrue(checks.check({'questions':[]},plan)['pass'])
+        del teaching['explanation']
+        self.assertFalse(checks.check({'questions':[]},plan)['pass'])
+    def test_word_export_is_opt_in(self):
+        from assemble import argument_parser
+        args=['k.pptx','q.pptx','pages.json','questions.json','plan.json','sequence.json','out']
+        self.assertFalse(argument_parser().parse_args(args).with_docx)
+        self.assertTrue(argument_parser().parse_args(args+['--with-docx']).with_docx)
+
     def test_docx_order_and_table(self):
         with tempfile.TemporaryDirectory() as d:
             f=Path(d)/'source.docx'

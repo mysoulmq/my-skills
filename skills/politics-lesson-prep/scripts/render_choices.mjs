@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {pathToFileURL} from 'node:url';
 import {validateChoice,choiceDiagnosticText} from './choice_contract.mjs';
+import {choiceSteps} from './choice_animation.mjs';
 import {choiceNotes} from './choice_notes.mjs';
 import {theme as T,put,putSegments,height,segmentHeight,shape,textWidth,requireFont,hasFont} from './question_style.mjs';
 import {writeSpacing,template} from '../../lesson-image-ppt/scripts/template_contract.mjs';
@@ -47,14 +48,13 @@ for(const q of data.questions){
   if(!fit()) throw Error(`${q.id}: text exceeds readable choice layout; revise concise diagnostics or supply a justified extended layout, never truncate source`);
   putSegments(s,stemSegments(),40,108,1190,{size:stemSize,lineSpacing:1.25,name:`${id}-stem`});
   let y=108+stemH+28;
-  const steps=[[`${id}-answer`]],spare=590-(y+heights.reduce((a,b)=>a+b,0)+3*18),rowGap=18+Math.min(18,spare/3);
+  const steps=choiceSteps(id,q.options),spare=590-(y+heights.reduce((a,b)=>a+b,0)+3*18),rowGap=18+Math.min(18,spare/3);
   for(const [i,o] of q.options.entries()){
     put(s,`${o.key}  ${o.text}`,48,y,1180,{size:optionSize,font:choiceFonts.option,lineSpacing:1.25,name:`${id}-option-${i}`});
     if(o.verdict!=='supported'){
       const color=o.verdict==='false'?'#B42318':T.colors.prompt;
       const box=layouts[i];
       put(s,diagnostic(o),box.x,y+box.dy,box.w,{size:21,font:T.fonts.answer,lineSpacing:1.25,color,emphasis:o.diagnosticFocus||[],name:`${id}-annotation-${i}`});
-      steps.push([`${id}-annotation-${i}`]);
     }
     y+=heights[i]+rowGap;
   }

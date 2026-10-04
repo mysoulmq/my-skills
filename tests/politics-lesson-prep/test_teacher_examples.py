@@ -23,6 +23,16 @@ class TeacherExamplesTests(unittest.TestCase):
         self.assertNotIn('teacherAnswer',read_bank(self.workspace)['examples'][0])
     def test_full_original_transformation_loaded(self):
         self.assertEqual(read_bank(self.workspace,['e1'])['examples'][0]['teacherMaterialColumn']['text'],'合成来源原句')
+    def test_task_routing_and_verified_input_output(self):
+        e=self.bank['examples'][0];e['uses']=['outline']
+        e['excerpts']=[{'role':role,**e['material']} for role in ('input','output')];self.save()
+        self.assertEqual(read_bank(self.workspace,task='outline')['examples'][0]['id'],'e1')
+        self.assertEqual(read_bank(self.workspace,task='choice-explanation')['examples'],[])
+        self.assertEqual(len(read_bank(self.workspace,['e1'],'outline')['examples']),1)
+        with self.assertRaises(ValueError):read_bank(self.workspace,['e1'],'essay-analysis')
+    def test_output_only_is_not_a_transformation(self):
+        e=self.bank['examples'][0];e['excerpts']=[{'role':'output',**e['material']}];self.save()
+        with self.assertRaises(ValueError):read_bank(self.workspace,['e1'])
     def test_unknown_selection_rejected(self):
         with self.assertRaises(ValueError):read_bank(self.workspace,['not-existing'])
     def test_model_text_cannot_masquerade_as_teacher_quote(self):

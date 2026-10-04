@@ -8,7 +8,6 @@ from pathlib import Path
 from zipfile import ZipFile
 from pptx_views import compose, ordered_slides
 from check_teaching import check
-from write_plan import write
 from compact_notes import rewrite
 from score_prediction import attach_notes
 
@@ -51,11 +50,23 @@ def manifests(knowledge_pptx, question_pptx, question_pages, sequence, plan):
     return result
 
 
-if __name__=='__main__':
+def argument_parser():
     p=argparse.ArgumentParser()
     for name in ['knowledge_pptx','question_pptx','question_pages','questions','plan','sequence','output']:p.add_argument(name)
-    a=p.parse_args();load=lambda f:json.loads(Path(f).read_text())
-    plan=load(a.plan);result=check(load(a.questions),plan)
+    p.add_argument('--with-docx',action='store_true',help='Export Word only when explicitly requested')
+    return p
+
+
+if __name__=='__main__':
+    a=argument_parser().parse_args();load=lambda f:json.loads(Path(f).read_text())
+    from check_choice_reveals import check as check_choices
+    if a.question_pptx!='-':
+        visibility=check_choices(a.question_pptx)
+        if not visibility['pass']:raise ValueError(visibility['errors'])
+    plan=load(a.plan)
+    if a.with_docx and plan.get('mode')=='ppt-support':
+        raise ValueError('Explicit Word export requires the full document plan fields; expand the shared plan first')
+    result=check(load(a.questions),plan)
     if not result['pass']:raise ValueError(result['errors'])
     out=Path(a.output);out.mkdir(parents=True,exist_ok=False)
     mappings={}
@@ -63,6 +74,10 @@ if __name__=='__main__':
         mappings[name]=compose(manifest,out/(name+'.pptx'))
         attach_notes(plan,load(a.questions),mappings[name])
         rewrite(out/(name+'.pptx'),mappings[name],plan,out/(name+'.pptx'))
-    # Keep build metadata private; finalization copies only the four artifacts.
+        visibility=check_choices(out/(name+'.pptx'))
+        if not visibility['pass']:raise ValueError(visibility['errors'])
+    # Build metadata is private; default deliverables are the available PPT views.
     (out/'page-mapping.json').write_text(json.dumps(mappings,ensure_ascii=False,indent=2))
-    write(plan,mappings['完整授课'],out/'授课方案.docx')
+    if a.with_docx:
+        from write_plan import write
+        write(plan,mappings['完整授课'],out/'授课方案.docx')

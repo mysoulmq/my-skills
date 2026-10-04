@@ -1,0 +1,7 @@
+{
+  "version": 1,
+  "effect": "appear",
+  "trigger": "click",
+  "initial": ["stem", "options", "combinations"],
+  "steps": ["answer", "annotations-in-option-order"]
+}

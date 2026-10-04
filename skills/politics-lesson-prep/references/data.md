@@ -14,6 +14,12 @@
 - `answerRefs:[1,...]`：对应规范答案点，可多材料对应同一点，也可关联多点；不规定点数，不从点数推定分值。
 这些字段用于`check_analysis_grounding.py`与语义复核。知识回看从已引用知识选取；方案、备注和揭示步骤复用相同对应。没有原答案时不能捏造这些来源字段来通过检查，应另做自拟答案的教学核验；不把来源校验器的通过当作无来源题的学科验收。
 
+## 默认精简教学底稿
+
+新生成默认 `mode: "ppt-support"`。只要求 lesson、designRationale、periods/activities、sequence及notesByPage。沿用稳定页面ID和内容覆盖检查；periods是内容单元，不要求分钟数。题目teaching与知识活动teaching必需 ask、expected、explanation、check；misconception/followup/transition按需写。题目活动可设`teachingRef: "q1"`引用本活动questionIds中的题目教学内容，不再抄写。知识活动仍需自己的具体讲法。默认不生成preparation、goals、difficulties、quickCard、cue等文档专用重复字段，也不另生成完整长讲稿。notesByPage仍由已有教学内容提炼一次，保留原有备注长度与点击对应要求。此精简不删除题目分析、原答案、讲义正文或验证依据。
+
+以下完整计划格式仅供显式Word请求或旧底稿兼容；无mode的旧底稿沿用完整校验。显式Word请求需补齐这些字段再导出。
+
 教学计划 `teaching-plan.json`：`lesson`, `designRationale`（教学主线与关键安排理由）, `preparation`数组（教师课前需掌握的具体判断）, `goals`数组, `difficulties`数组, `periods`数组。
 每课时含 `title`, `quickCard`（`mainline`主线、`mustExplain`区别数组、`questions`问题数组、`contentChoice`内容取舍；兼容旧`timeChoice`，非必填）, `activities` 数组；活动含 `id`, `title`, `minutes`（可选参考用时，不要求填写）, `kind`(`diagnosis`/`knowledge`/`question`/`recap`), `knowledgeTopics`(原稿小点标题数组), `questionIds`数组，以及上述`teaching`对象和`optional`布尔值。活动另含短句`cue`：`ask`, `explain`, `pitfall`, `followup`, `check`, `transition`，每项约35—50汉字，供课堂速查，不用泛泛指令代替具体辨析。periods沿用接口名，可表示按内容逻辑划分的教学单元，不要求对应固定课时。可选活动说明学习作用与适用情况，不要求等时替换；不得用考点不相干的题替代知识教学。`optional`只表示教学取舍，不能据此设置幻灯片隐藏或添加投影标签；默认页面可见，选讲理由和接续页写入teaching、cue及相关页面备注。不把内容全塞进单课时。
 

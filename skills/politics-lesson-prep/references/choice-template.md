@@ -28,3 +28,8 @@ source只取输入题目文档明确给出的题源，按原文保留年份、�
 教学性呈现与实质补写的边界见content-review.md。必要补写使用teachingAdditions数组，每项含content、reason、basis（具体出处或材料依据）；渲染器将其与review.corrections一起写入对应页备注，不把补写冒充原解析。无实质补写时省略该字段。
 
 本工作流默认使用review.status="source-preserved"及review.sourcePolicy="provided-answer-authoritative"，不需要逐题再次询问是否沿用答案；不能伪标独立学科审核passed或修改本地脚本跳过转化校验。此模式要求document来源、完整reference.answer/explanation与locator、答案严格不变；conclusion记录来源转化检查结论。默认策略不要求sourceInstruction和sourceNote，也不自动生成“答案可疑”备注；若本页确有用户需要的来源说明，可使用sourceNote。旧显式sourceInstruction模式继续兼容。每项sourceReason必须为原解析精确摘录，reason与其相同；旁注可忠实压缩，不增加实质结论。不得混入corrections或teachingAdditions。共享校验仍检查题目结构、原解析摘录和答案组合；choiceNotes自动把sourceNote及teachingNotes写入备注。程序通过只代表忠实保留，不代表争议已解决。此模式不用于自编题、缺原答案或擅自改答。默认来源策略直接来自本skill已确认的用户要求；不得伪造逐题授权。
+
+
+## 禁止初始泄题
+
+答案和任何解析（无论紧邻选项还是窄版换到其下方）都必须为独立动画对象，不能并入题干/选项文本框，不使用自动延时出现。位置不能代替动画隐藏。只允许题干、选项、组合在首次放映时显示；学生作答后点击答案，再逐项点击解析。动画步骤读取assets/choice-animation.json，经统一add_reveals写入；按animation-validation.md检查最终文件。编辑态或全显PNG会显示全部内容，不得把这种预览称为首次放映效果。

@@ -10,15 +10,15 @@
 2. 综合题先按 content-review.md 建立从参考答案倒查材料与讲义的依据链，执行 `python check_analysis_grounding.py questions.json knowledge-source.json --report analysis-grounding.json`，再进行材料选择与知识对应的语义复核；原生模板路径同样必须执行。建立 questions.json 和 teaching-plan.json 后，运行 `python check_teaching.py questions.json teaching-plan.json --report check.json`。脚本核对连续材料引用、字段与活动题号（不检查分钟合计），不判断学科或教学含义。
 3. 使用 `node render_questions.mjs questions.json /absolute/lesson-image-ppt build sequence.json teaching-plan.json` 创建题目页、经教学设计明确需要的可选诊断页、本页讲授卡和稳定页面列表，随后调用依赖的 add_reveals.py 写入原生动画。第一次创建文件前，按 Presentations 技能执行其 operation marker。读取其终检要求，不以生成成功代替验收。
 4. `pptx_views.py manifest.json candidate.pptx --mapping mapping.json` 根据教学序列复制原生页面及其资源关系，保持页面XML和动画。manifest 包含 `decks:{key:absolutePptxPath}` 与 `slides:[{id,deck,sourceSlide,activityIds,clicks}]`。sourceSlide 按实际播放顺序、从1开始，不能根据slide文件名推断。不得重复引用同一源页；需要重复显示时先明确生成独立页实例。复用已有讲義产物只用于日常缓存或接口验证，独立完整试跑必须从原图开始。
-5. `write_plan.py teaching-plan.json mapping.json candidate.docx` 按真实页码生成方案；每个活动须有页面映射，拒绝缺失引用。采用 Documents 技能捆绑 Python、python-docx，渲染并检查全部页面后再交付。
+5. **仅用户明确需要 Word 时**，`write_plan.py teaching-plan.json mapping.json candidate.docx` 按真实页码生成方案；每个活动须有页面映射，拒绝缺失引用。采用 Documents 技能捆绑 Python、python-docx，渲染并检查全部页面后再交付。
 
 统一教学计划确定后，创建 sequence.json 数组，每项为 `{knowledgePage:1,activityIds:[...]}` 或 `{questionId:"q1",stage:"teaching",activityIds:[...]}`。精选代表题可另有`stage:"diagnosis"`，生成独立材料设问页并前置；不提前展示答案。knowledgePage按讲义实际顺序从1开始，必须完整保序；每题每阶段只插入一次，脚本展开该阶段页面。回顾活动可关联正在显示的既有页面，不必另造空泛回顾页。
 
-`add_knowledge_notes.py input.pptx source.json deck.json sequence.json teaching-plan.json noted.pptx` 按notesByPage给讲义页补充临场短提示；不改正文或动画。随后 `assemble.py noted.pptx questions-animated.pptx question-build/slides.json questions.json teaching-plan.json sequence.json bundle-build` 生成三份候选PPTX、映射和授课方案。输出目录必须是新目录；构建映射留在私有目录，主交付为四份文件；如需保留编辑依据，附独立原始资料底稿，不把原文塞入备注。
+`add_knowledge_notes.py input.pptx source.json deck.json sequence.json teaching-plan.json noted.pptx` 按notesByPage给讲义页补充临场短提示；不改正文或动画。随后 `assemble.py noted.pptx questions-animated.pptx question-build/slides.json questions.json teaching-plan.json sequence.json bundle-build` 默认生成三份候选PPTX及私有映射；仅明确要求 Word 时增加 `--with-docx`（并准备完整文档字段）。输出目录必须是新目录；构建映射留在私有目录，默认主交付为有内容的PPT文件；如需保留编辑依据，附独立原始资料底稿，不把原文塞入备注。
 
 仅有一种资料时，缺少的源PPT参数传 `-`，相应题目/页面数组为空。只输出有实际内容的视图，不生成空白课件。
 
-脚本不判断教学顺序是否合理，不能把任意sequence当作教研通过。讲义覆盖使用依赖检查器仅检查讲义正文；题目和方案的语义复核独立执行。对合并候选用 Presentations 的包完整性、布局检查与终检，然后在WPS验证静态、动画对象初始隐藏、点击顺序和最后一步（动画对象隐藏不等于整张幻灯片隐藏）。终检输出父目录须预先存在；临时目录路径使用realpath，避免macOS /tmp别名误判。
+脚本不判断教学顺序是否合理，不能把任意sequence当作教研通过。讲义覆盖使用依赖检查器仅检查讲义正文；题目和方案的语义复核独立执行。对合并候选用 Presentations 的包完整性、布局检查与终检，动画按 [模板与验证复用](animation-validation.md)检查，不每轮重复 WPS 操作；首次认证或兼容性异常才检查真实初始态、点击顺序和最后一步。动画对象隐藏不等于整张幻灯片隐藏。终检输出父目录须预先存在；临时目录路径使用realpath，避免macOS /tmp别名误判。
 
 中文DOCX预览若出现空白或方块，先核对实际OOXML中文字是否齐全。可在构建目录创建临时fontconfig配置，指向本机已经安装的中文字体目录，使用 `FONTCONFIG_FILE` 运行捆绑render_docx.py；不安装字体、不修改系统字体配置，也不把缺字预览当作已完成视觉验收。
 
@@ -32,7 +32,7 @@
 
 不要为保持旧页数而保留无教学依据的diagnosis阶段。取消前置诊断时同步移除sequence条目、独立诊断页与相应活动/备注，保留该题正式材料和解析；重新分配课时、生成三视图及方案映射。原题不因取消重复诊断页而丢失。
 
-题目模板更新后先读question-template.md。确保LESSON_FONT_FILES同时加载楷体与微软雅黑（含粗体）。必要时先用相同参数加--layout-only只写slides.json/reveal-plan.json，按实际分页更新notesByPage，再正常渲染到新构建目录。模板分页可能不同于旧列表页；重建教学映射、原生动画和DOCX页码，不能继续沿用旧页数。脑图标注是教学底稿的局部加工，不要求重新理解所有题目。
+题目模板更新后先读question-template.md。确保LESSON_FONT_FILES同时加载楷体与微软雅黑（含粗体）。必要时先用相同参数加--layout-only只写slides.json/reveal-plan.json，按实际分页更新notesByPage，再正常渲染到新构建目录。模板分页可能不同于旧列表页；重建教学映射、原生动画和按需生成的DOCX页码，不能继续沿用旧页数。脑图标注是教学底稿的局部加工，不要求重新理解所有题目。
 
 题目加工同轮完成缺分预测，先运行check_teaching.py核对scorePrediction的分组、来源标识和总和；所有显示分值仍通过check_question_slides.py。assemble.py在每个视图的该题各页附加简短预测说明；若提示超长，局部缩写其他教学提示后重新导出，不放宽备注限制。
 
@@ -59,3 +59,5 @@
 原生与通用分析适配都要读取native-essay-template.md的共享显示接口。先对整题调用`analysis_presentation.compile_question`（统一两列组号），再按analysisIndex取组；基于其输出测量容量、分页、写入原有区域；用analysisBlocks记录实际对象ID。最终完整及题目视图均运行：
 `python check_analysis_screen.py final.pptx questions.json final-view-mapping.json --report analysis-screen.json`
 该门禁按实际播放页序与对象读取显示文字，检查审定的材料概括与知识短句是否确实落在对应分析区；报告绑定当前文件哈希。缺teachingFocus/displayAnchors或遇到旧response字段时，自主回原资料修订相应内容后重导出，不能由渲染器取任意子串凑齐或把答案追加进材料栏。程序只验证引用与显示传递；另对实际页面逐组核对设问焦点、主依据、知识对应和概括保真，不能将字符串检查当教学验收。
+
+选择题交付前对**最终完整PPT和题目PPT**运行 `python check_choice_reveals.py final.pptx --choices choices.json --report choice-animation-check.json`。它检查真实OOXML动画与选项原文，拒绝未注入动画的候选或把解析混入选项；assemble同时对输入与合并后文件进行动画门禁。静态导出不能显示点击过程，不拿全显预览证明初始放映态。

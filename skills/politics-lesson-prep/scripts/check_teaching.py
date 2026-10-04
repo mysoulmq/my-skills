@@ -14,7 +14,10 @@ def norm(text):
 
 def check(questions, plan):
     errors = []
-    for field in ('lesson','designRationale','preparation','goals','difficulties'):
+    light=plan.get('mode')=='ppt-support'
+    teaching_fields=('ask','expected','explanation','check') if light else TEACHING
+    by_id={q['id']:q for q in questions['questions']}
+    for field in (('lesson','designRationale') if light else ('lesson','designRationale','preparation','goals','difficulties')):
         if not plan.get(field):errors.append(f'Plan missing {field}')
     ids = set()
     for q in questions['questions']:
@@ -44,12 +47,12 @@ def check(questions, plan):
                 errors.append(f'{qid}: incomplete answer point')
             if 'score' in item and (not isinstance(item['score'], (int, float)) or item['score'] <= 0):
                 errors.append(f'{qid}: invalid score')
-        for field in TEACHING:
+        for field in teaching_fields:
             if not q.get('teaching', {}).get(field): errors.append(f'{qid}: missing teaching.{field}')
     covered = set()
     activities = set()
     for period in plan['periods']:
-        for field in ('mainline','mustExplain'):
+        for field in (() if light else ('mainline','mustExplain')):
             if not period.get('quickCard',{}).get(field):errors.append(f'{period["title"]}: missing quickCard.{field}')
         for a in period['activities']:
             if a['id'] in activities: errors.append(f'Duplicate activity: {a["id"]}')
@@ -59,9 +62,13 @@ def check(questions, plan):
             for qid in a.get('questionIds', []):
                 if qid not in ids: errors.append(f'{a["id"]}: unknown question {qid}')
                 covered.add(qid)
-            for field in TEACHING:
-                if not a.get('teaching', {}).get(field): errors.append(f'{a["id"]}: missing teaching.{field}')
-            for field in ('ask','explain','pitfall','followup','check','transition'):
+            ref=a.get('teachingRef')
+            if ref is not None and (ref not in by_id or ref not in a.get('questionIds',[])):
+                errors.append(f'{a["id"]}: invalid teachingRef')
+            teaching=by_id.get(ref,{}).get('teaching',{}) if ref is not None else a.get('teaching',{})
+            for field in teaching_fields:
+                if not teaching.get(field): errors.append(f'{a["id"]}: missing teaching.{field}')
+            for field in (() if light else ('ask','explain','pitfall','followup','check','transition')):
                 if not a.get('cue',{}).get(field):errors.append(f'{a["id"]}: missing cue.{field}')
     if ids - covered: errors.append(f'Questions absent from plan: {sorted(ids-covered)}')
     return {'pass': not errors, 'errors': errors}
