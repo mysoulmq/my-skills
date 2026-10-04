@@ -46,6 +46,25 @@ class RecallTests(unittest.TestCase):
   self.assertEqual(''.join(x['text'] for x in spans),'甲乙丙丁')
   self.assertTrue(next(x for x in spans if x['text']=='乙')['bold'])
   self.assertTrue(next(x for x in spans if x['text']=='乙')['highlight'])
+ def test_outline_ordinals_omit_display_preserving_source_and_hierarchy(self):
+  titles=['第一单元 生产资料所有制与经济体制','第二课 我国的社会主义市场经济体制','第二框 更好发挥政府作用']
+  d={'route':'outline-overview','scopeReason':'核定框架','sourceScope':'教材核定标题','nodes':[]}
+  catalog={}
+  for i,title in enumerate(titles):
+   ident=str(i);catalog['ppt:source:2:'+ident]=title
+   d['nodes'].append({'id':ident,'parentId':str(i-1) if i else None,'text':title,'source':{'kind':'outline','deck':'source','page':2,'shapeId':ident,'quote':title},'display':{'omitSourceNumber':True}})
+  original=copy.deepcopy(d);out=compile_recall(d,catalog)
+  self.assertEqual([n['text'] for n in out],['生产资料所有制与经济体制','我国的社会主义市场经济体制','更好发挥政府作用'])
+  self.assertEqual([n['depth'] for n in out],[0,1,2])
+  self.assertEqual([n['parentId'] for n in out],[None,'0','1'])
+  self.assertEqual([n['source']['quote'] for n in out],titles)
+  self.assertEqual(d,original)
+  d['nodes'][0].pop('display')
+  self.assertTrue(compile_recall(d,catalog)[0]['text'].startswith('第一单元'))
+ def test_outline_ordinal_cleanup_cannot_remove_substantive_numbers(self):
+  for title in ['第一资源是人才','第二产业','①内部论点','2026年发展','第六课']:
+   d={'route':'outline-branch','scopeReason':'核定分支','sourceScope':'来源','nodes':[{'id':'h','parentId':None,'text':title,'source':{'kind':'outline','unitId':'h','quote':title},'display':{'omitSourceNumber':True}}]}
+   with self.assertRaisesRegex(ValueError,'No removable'):compile_recall(d,{'unit:h':title})
  def test_missing_highlight_decision_does_not_pass_as_no_highlight(self):
   item={'evidenceDisplay':'材料','principleDisplay':'原理','visualReviewReason':'保留材料主体'}
   with self.assertRaises(ValueError):compile_analysis_emphasis(item)

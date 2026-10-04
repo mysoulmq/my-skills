@@ -17,11 +17,16 @@ def recall_display_text(node, route):
     omit=display.get('omitSourceNumber',False)
     if type(omit)!=bool:raise ValueError('omitSourceNumber must be boolean')
     if not omit:return text
-    if route!='handout' or node.get('parentId') is not None:
-        raise ValueError('Only a standalone handout heading can omit its source ordinal')
-    # Circled internal list items, textbook chapter/frame names, years, units,
-    # decimals and substantive wording are intentionally not matched.
-    prefix=r'^(?:[0-9]+[、．]|[0-9]+\.(?![0-9])|[一二三四五六七八九十百]+、|[（(](?:[0-9]+|[一二三四五六七八九十百]+)[）)])'
+    if route=='handout':
+        if node.get('parentId') is not None:
+            raise ValueError('Only a standalone handout heading can omit its source ordinal')
+        prefix=r'^(?:[0-9]+[、．]|[0-9]+\.(?![0-9])|[一二三四五六七八九十百]+、|[（(](?:[0-9]+|[一二三四五六七八九十百]+)[）)])'
+    elif route in ('outline-branch','outline-overview'):
+        # Explicitly reviewed outline labels only; preserve knowledge titles,
+        # parent/child structure, internal numbering and the original source.
+        prefix=r'^第(?:[0-9]+|[一二三四五六七八九十百]+)(?:单元|课|框)'
+    else:
+        raise ValueError('Unsupported recall source route')
     result,count=re.subn(prefix,'',text,count=1)
     if not count or not result:raise ValueError('No removable source heading ordinal')
     return result
