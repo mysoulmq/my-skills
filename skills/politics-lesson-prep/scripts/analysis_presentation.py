@@ -4,9 +4,15 @@ Source anchors prove provenance; display anchors preserve reviewed expressions.
 Neither check judges whether the material selection is pedagogically sound.
 """
 import math
+import re
 
 def norm(x):
     return ''.join(str(x).split())
+
+
+def without_source_number(text):
+    """Remove one leading source list marker, never a number inside the content."""
+    return re.sub(r'^\s*(?:[（(]\d+[）)]|[①-⑳]|\d+[、．]|\d+\.(?!\d))\s*', '', text)
 
 def compile_display(item):
     if item.get('responseDisplay') or item.get('responseAnchor'):
@@ -26,6 +32,20 @@ def compile_display(item):
         if any(norm(a) not in norm(display) for a in selected):
             raise ValueError(f'Lost reviewed {role} expression during compression')
     return {'material':material,'knowledge':knowledge}
+
+
+def compile_question(question):
+    """Number paired teaching groups before pagination, independently of source IDs.
+
+    Source citations are untouched. A group can contain multiple knowledge clauses;
+    its internal hierarchy must already be reviewed, not inferred here.
+    """
+    result=[]
+    for index,item in enumerate(question['analysis'],1):
+        display=compile_display(item)
+        result.append({role: f'{index}. '+without_source_number(text)
+                       for role,text in display.items()})
+    return result
 
 def paginate(measured, body_capacity, knowledge_capacity, gap=0):
     """Pack complete semantic groups using measured heights in the same units.

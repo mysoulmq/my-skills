@@ -4,7 +4,7 @@ from pathlib import Path
 from zipfile import ZipFile
 from xml.etree import ElementTree as ET
 from pptx_views import ordered_slides
-from analysis_presentation import compile_display,norm
+from analysis_presentation import compile_question,norm
 A='{http://schemas.openxmlformats.org/drawingml/2006/main}'
 P='{http://schemas.openxmlformats.org/presentationml/2006/main}'
 
@@ -13,9 +13,9 @@ def check(pptx,questions,mapping):
     order=ordered_slides(files);errors=[];seen=set()
     expected={}
     for q in questions['questions']:
-        for i,a in enumerate(q['analysis'],1):
-            try:expected[(q['id'],i)]=compile_display(a)
-            except ValueError as e:errors.append(f'{q["id"]}/{i}: {e}')
+        try:
+            for i,a in enumerate(compile_question(q),1):expected[(q['id'],i)]=a
+        except ValueError as e:errors.append(f'{q["id"]}: {e}')
     for p in mapping:
         blocks=p.get('analysisBlocks',[])
         if not blocks:continue

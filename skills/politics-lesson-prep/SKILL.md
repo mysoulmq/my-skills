@@ -31,6 +31,10 @@ description: Use when preparing a complete senior-high politics lesson from hand
 
 生成综合题前先检查工作区 `.politics-lesson-prep/essay-template.json`。若存在 `mode: native-reference`，必须执行[原生综合题模板](references/native-essay-template.md)：直接复制该 PPT 的分析页／答案页并就地替换内容，保留原布局、字体、配色和图形；这是对后文通用题目渲染路径的优先覆盖。不能只提取配色后重新绘制，也不能把未经用户认可的简化版布局作为“修复”。通用 `render_questions.mjs` 会拒绝该模式，应切换原生模板适配继续工作，不删除配置或复制旧脚本绕过。参考页不是可直接交付的新题，必须替换旧题正文、知识图片及备注，核对动画目标和实际可读性。
 
+## 生成综合题前读取教师转换样例
+
+先按[真实教师 few-shot](references/teacher-few-shots.md)读取工作区私有样例库：原材料/设问、教师答案、教师第二列和第三列应成套对照。模板提供版式，不能代替内容示范；合成规则例子不能冒充教师样例。已安装时必须在起草审材料之前实际读取适用样例，保存所用ID；复核两列选材、压缩与分组是否沿其路径。两列都用本题同组序号，不把讲义条目号直接带到第三列。
+
 ## 分工与复用
 
 图片环节调用已安装的 `lesson-image-ppt`：读取其 SKILL.md，遵守原图识读、知识组、标注、分页和动画要求。依赖可从当前 skill 的同级目录或 workspace 的 `.agents/skills` 解析；缺失时说明依赖，不复制替代流程。默认图片识读和讲义设计使用 `gpt-6-astra / low`，新增题目和教学组织使用 `gpt-5.6-sol / medium`。skill 不能自动改变当前模型；须通过明确支持模型配置的执行器执行，并核实真实配置，不能错标模型成绩。

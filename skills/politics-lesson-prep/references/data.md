@@ -39,4 +39,6 @@
 - `evidenceDisplay`：审定的材料概括，保留本题关键变化、行为或条件，不自动追加答案结论。
 - `principle`：与knowledgeRefs一致的完整来源措辞，用于引用校验；可另设`principleDisplay`为审定的上屏知识短句，必须保留适用限定及关系，不能只留含混标签。未设则使用principle。
 - `displayAnchors:{material:[...],knowledge:[...]}`：内容复核时选定的不可丢表达（如变化的两端、关键限定与关系），必须出现在各自显示文本中。它们用于阻止后续排版压缩丢词，不证明选材或概括正确，不能由渲染器临时取任意子串凑齐。
-共享analysis_presentation.compile_display原样返回这两栏，不生成新讲法。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId。旧responseAnchor/responseDisplay接口停用：回原题、原解析重新审定材料，迁移到上述字段；不能仅改字段名、把旧答案式回应机械拼入材料，或删掉已有必要联系来过门禁。普通迁移自主完成，不询问用户。
+共享analysis_presentation.compile_display提供内容层；最终两栏调用compile_question(question)，按整题分组生成成对序号、剥离显示文本开头的旧条目号，不修改来源引用。先编译编号再分页，不能每页重新编号。页面analysisBlocks记录各组1-based analysisIndex与实际materialShapeId、knowledgeShapeId。旧responseAnchor/responseDisplay接口停用：回原题、原解析重新审定材料，迁移到上述字段；不能仅改字段名、把旧答案式回应机械拼入材料，或删掉已有必要联系来过门禁。普通迁移自主完成，不询问用户。
+
+已安装teacher-examples.json时，每题保存`teacherExampleRefs:[实际读过的样例ID]`，整轮保存一次样例库哈希和所读ID；同批新题复用已读样例，不重复加载全文。生成前的读取和最终usage核对见teacher-few-shots.md。该记录不等于教学通过，必须比对实际第二、第三列的表达与对应。
