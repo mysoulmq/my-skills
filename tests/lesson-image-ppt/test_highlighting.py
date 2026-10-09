@@ -75,6 +75,18 @@ class HighlightTests(unittest.TestCase):
         out, _ = module.compile_marks(self.source, {"slides": [{"items": [{"ref": "a", "text": "实践是认识的唯一\n来源。", "marks": [self.mark()]}]}]})
         self.assertEqual(out["slides"][0]["items"][0]["emphasis"], ["唯一\n来源"])
 
+    def test_missing_title_review_is_not_excused_by_leaf_marks(self):
+        deck = {'slides': [{'type':'knowledge-map','groups':[{'title':'a','topics':[{'title':'b','leaves':[{'ref':'a','marks':[self.mark()]}]}]}]}]}
+        with self.assertRaisesRegex(ValueError, 'unreviewed navigation frame'):
+            module.compile_marks(self.source, deck)
+        group = deck['slides'][0]['groups'][0]
+        group['title'] = {'ref':'a','marks':[self.mark('实践','topic-key')]}
+        with self.assertRaisesRegex(ValueError, 'unreviewed navigation topic'):
+            module.compile_marks(self.source, deck)
+        group['topics'][0]['title'] = {'ref':'b','unmarkedReason':'本标题完整陈述条件，未提取独立的导航核心词。'}
+        _, report = module.compile_marks(self.source, deck)
+        self.assertEqual(len(report['navigationTitles']), 2)
+
 
 if __name__ == "__main__":
     unittest.main()

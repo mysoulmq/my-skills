@@ -47,6 +47,8 @@
 ]}
 ```
 
+每个导航框标题、目标题都必须逐项完成选择：提供有来源理由的 `topic-key` marks；确实不标时提供具体 `unmarkedReason`。禁止用“叶节点已有黄底”代替标题检查，也不为过检批量制造红字。prepare_marks 与 check_plan 会拒绝未审查的标题，审稿表按框/目列出标注与不标原因。
+
 导航叶由多个来源拼接时，每处 marks 增加 `evidenceRef`，且 quote 必须同时存在于该原文和可见叶节点；标题引用自身原文即可。各页源ID自定，示例不是固定知识数据库。
 
 运行 `scripts/prepare_marks.py source.json deck.json styled-deck.json --report highlight-review.json`，再将 styled-deck.json 交给 render.mjs。脚本会核对原文、可见文字、角色与页型，转换成原生样式并保留审稿表；它不能判断教学理由是否成立，模型仍须按上表逐项复核。未经解释的旧版颜色数组会报提示，不能算完成新标注标准。

@@ -1,5 +1,6 @@
 import {role,writeSpacing,template} from './template_contract.mjs';
 import {fitSpacing} from './spacing_profile.mjs';
+import {headingStyle,prepareParagraphs} from './heading_layout.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
@@ -16,7 +17,7 @@ try { execFileSync(process.env.LESSON_PYTHON||'python3', [fileURLToPath(new URL(
 catch(e){throw Error(`Teaching plan check failed before rendering: ${e.stdout||e.message}`);}
 
 const hasMarks=o=>o&&typeof o==='object'&&(Array.isArray(o.marks)||Object.values(o).some(hasMarks));
-if(hasMarks(deck)&&deck._highlightPlan?.version!==1)throw Error('Compile marks with prepare_marks.py before rendering');
+if((hasMarks(deck)||deck.slides.some(s=>s.type==='knowledge-map'))&&deck._highlightPlan?.version!==2)throw Error('Compile marks with prepare_marks.py before rendering (including navigation title review)');
 const units=new Map(source.units.map(u=>[u.id,u]));
 if(units.size!==source.units.length)throw Error('Duplicate source IDs');
 const norm=s=>String(s).replace(/\s/g,'');
@@ -202,11 +203,11 @@ for(let i=0;i<deck.slides.length;i++){
  if(d.frame)put(s,d.frame,580,26,644,37,{size:22,color:C.muted,align:'right'});
  const title=resolve(d.title),titleSize=d.titleSize||42;if(height({...title,bold:true},1168,titleSize)>74)throw Error('Long title: move lower heading to topic or split source title responsibly');
  put(s,title,56,89,1168,74,{size:titleSize,bold:true,color:C.navy});
- if(d.topic)put(s,d.topic,58,163,1164,45,{size:29,bold:true,color:C.accent});
+ if(d.topic){const o=resolve(d.topic);put(s,{...o,...headingStyle(units.get(o.ref)?.level)},58,163,1164,45);}
  line(s,56,213,1168,0,C.line,1.2);
  let y=d.bodyTop??238;
  if(!Number.isFinite(y)||y<218||y>500)throw Error('bodyTop must be within 218–500px');
- const fitted=fitSpacing(d.blocks,650-y,blockHeight,d.spacingProfile??deck.spacingProfile??'comfortable');
+ const fitted=fitSpacing(prepareParagraphs(d.blocks,units),650-y,blockHeight,d.spacingProfile??deck.spacingProfile??'comfortable');
  layoutReview.push({slide:s._lessonNumber,type:'content-spacing',...fitted.review});
  for(const b of fitted.blocks){if((b.before??0)<0||(b.after??0)<0)throw Error('Block spacing must be nonnegative');y+=b.before??0;if(b.type==='paragraphs')y=paraBlock(s,b.items,y,b);else if(b.type==='branches')y=branches(s,b,y);else if(b.type==='table')y=table(s,b,y);else if(b.type==='arrow'){
  if(y+56>650)throw Error('Arrow overflow');s.shapes.add({geometry:'downArrow',position:{left:b.x??366,top:y,width:30,height:38},fill:C.accent,line:{fill:'none',width:0}});y+=60;
@@ -218,6 +219,8 @@ for(let i=0;i<deck.slides.length;i++){
 const covered=new Set(usage.map(u=>u.id));const missing=source.units.filter(u=>!covered.has(u.id));if(missing.length)throw Error(`Unplaced source units: ${missing.map(u=>u.id).join(',')}`);
 await (await PresentationFile.exportPptx(p)).save(path.join(out,'candidate.pptx'));
 writeSpacing(path.join(out,'candidate.pptx'));
+try { execFileSync(process.env.LESSON_PYTHON||'python3',[fileURLToPath(new URL('./check_styles.py',import.meta.url)),sourcePath,deckPath,path.join(out,'candidate.pptx'),'--report',path.join(out,'style-check.json')],{encoding:'utf8'}); }
+catch(e){throw Error(`Native heading/navigation style check failed: ${e.stdout||e.message}`);}
 await fs.writeFile(path.join(out,'template-source.json'),JSON.stringify({sha256:template.sha256}));
 await fs.mkdir(path.join(out,'previews'),{recursive:true});
 for(let i=0;i<p.slides.items.length;i++){const s=p.slides.items[i],id=String(i+1).padStart(2,'0');const im=await p.export({slide:s,format:'png',scale:1});await fs.writeFile(path.join(out,`previews/${id}.png`),new Uint8Array(await im.arrayBuffer()));}

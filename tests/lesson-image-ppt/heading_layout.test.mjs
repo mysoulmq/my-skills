@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {headingStyle,prepareParagraphs} from '../../skills/lesson-image-ppt/scripts/heading_layout.mjs';
+import {fitSpacing} from '../../skills/lesson-image-ppt/scripts/spacing_profile.mjs';
+const units=new Map([['a',{id:'a',kind:'heading',level:'point'}],['b',{id:'b',kind:'heading',level:'point'}]]);
+const input=[{type:'paragraphs',items:['a','explanation-a',{ref:'b',size:32,bold:false},'explanation-b']}];
+const prepared=prepareParagraphs(input,units),items=prepared[0].items;
+for(const i of [0,2])for(const [k,v] of Object.entries(headingStyle()))assert.equal(items[i][k],v);
+assert.ok(items[1].indent>items[0].indent);
+assert.ok(items[1].gap>items[0].gap);
+const result=fitSpacing(prepared,600,b=>b.items.reduce((s,o)=>s+40+o.gap,0));
+assert.equal(result.blocks[0].items[0].gap,12);
+assert.ok(result.blocks[0].items[1].gap>12);
+assert.deepEqual(input[0].items,['a','explanation-a',{ref:'b',size:32,bold:false},'explanation-b']);
+assert.throws(()=>prepareParagraphs(input,new Map([['a',{id:'a',kind:'heading'}]])),/semantic level/);
+console.log('Peer headings, subordinate bodies, stable inner spacing and undeclared levels passed');

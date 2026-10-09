@@ -2,11 +2,16 @@
 import argparse
 import json
 from pathlib import Path
+from prepare_marks import navigation_reviews
 
 
 def check(source, deck):
     units = {u['id']: u for u in source['units']}
     errors, placements = [], {}
+    try:
+        navigation_reviews(deck)
+    except ValueError as exc:
+        errors.append(str(exc))
     def walk(obj, slide, path, indentation=0):
         if isinstance(obj, str):
             if obj in units:
@@ -28,6 +33,12 @@ def check(source, deck):
             if key in slide: walk(slide[key], i, key)
         for j, block in enumerate(slide.get('blocks', [])):
             walk(block, i, f'blocks[{j}]')
+            if block.get('type') == 'paragraphs':
+                for item in block.get('items', []):
+                    ref = item if isinstance(item, str) else item.get('ref')
+                    unit = units.get(ref, {})
+                    if unit.get('kind') == 'heading' and unit.get('level') not in ('lesson', 'frame', 'topic', 'point', 'subpoint', 'document'):
+                        errors.append(f'Page {i}: heading {ref} needs explicit semantic level; body placement must not demote headings')
     # Heading text appearing in the image does not establish its curriculum level.
     maps = [(i, slide) for i, slide in enumerate(deck['slides'], 1)
             if slide.get('type') in ('knowledge-map', 'overview')]

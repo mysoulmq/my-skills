@@ -2,8 +2,10 @@ import importlib.util
 from copy import deepcopy
 from pathlib import Path
 import unittest
+import sys
 
 SCRIPTS = Path(__file__).resolve().parents[2] / 'skills/lesson-image-ppt/scripts'
+sys.path.insert(0, str(SCRIPTS))
 def load(name):
     spec = importlib.util.spec_from_file_location(name, SCRIPTS / (name + '.py'))
     mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
@@ -48,7 +50,7 @@ class CurriculumTests(unittest.TestCase):
                        'curriculumOutline': [{'frameRef': 'f', 'topicRefs': ['t'], 'verified': True,
                                               'evidence': {'image': 'input.jpg', 'region': 'upper heading'}}]}
         self.deck = {'slides': [{'type': 'knowledge-map', 'groups': [
-            {'title': 'f', 'topics': [{'title': 't', 'leaves': []}]}]},
+            {'title': {'ref':'f','unmarkedReason':'本测试仅验证教材层级，不评价标色选择'}, 'topics': [{'title': {'ref':'t','unmarkedReason':'本测试仅验证教材层级，不评价标色选择'}, 'leaves': []}]}]},
             {'type': 'content', 'title': 't', 'blocks': []}]}
     def test_verified_titles_pass(self):
         self.assertTrue(PLAN.check(self.source, self.deck)['passed'])

@@ -12,6 +12,27 @@ ROLES = {"topic-key", "knowledge-anchor", "analysis-axis", "definition-core",
 STYLE_KEYS = ("focus", "emphasis", "contrast")
 
 
+def navigation_reviews(deck):
+    reviews = []
+    for page, slide in enumerate(deck['slides'], 1):
+        if slide.get('type') != 'knowledge-map':
+            continue
+        for group in slide.get('groups', []):
+            titles = [('frame', group.get('title'))] + [('topic', t.get('title')) for t in group.get('topics', [])]
+            for level, title in titles:
+                # Incomplete synthetic fragments are validated elsewhere.
+                if title is None:
+                    continue
+                obj = title if isinstance(title, dict) else {'ref': title}
+                marks = [m for m in obj.get('marks', []) if m.get('role') == 'topic-key']
+                reason = obj.get('unmarkedReason')
+                if not marks and (not isinstance(reason, str) or len(reason.strip()) < 8):
+                    raise ValueError(f"Page {page}: unreviewed navigation {level} title {obj.get('ref')}; supply source-backed topic-key marks or a specific unmarkedReason")
+                reviews.append({'slide': page, 'level': level, 'ref': obj.get('ref'),
+                                'marked': bool(marks), 'unmarkedReason': reason})
+    return reviews
+
+
 def norm(text):
     return re.sub(r"\s", "", str(text))
 
@@ -23,6 +44,7 @@ def compile_marks(source, deck):
     displayed = display_units(source)
     result = deepcopy(deck)
     report = {"marks": [], "legacyUnexplained": [], "axisGroups": {},
+              "navigationTitles": navigation_reviews(deck),
               "scope": "Evidence and style checks only; independently review teaching reasons and logic."}
 
     def visible(obj):
@@ -137,7 +159,7 @@ def compile_marks(source, deck):
 
     for index, slide in enumerate(result["slides"], 1):
         walk(slide, index, slide.get("type", "content"), f"slides[{index}]", "body")
-    result["_highlightPlan"] = {"version": 1, "marks": len(report["marks"]),
+    result["_highlightPlan"] = {"version": 2, "marks": len(report["marks"]),
                                  "legacyUnexplained": len(report["legacyUnexplained"])}
     report["semanticReviewRequired"] = True
     report["evidenceAndStylesPassed"] = True

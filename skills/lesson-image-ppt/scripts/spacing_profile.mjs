@@ -11,7 +11,7 @@ export function fitSpacing(blocks, available, measure, profile='comfortable') {
     if(b.type==='paragraphs'){
       const n=b.items.length,preferred=n>=2&&n<=4?gap(`lesson.body.${n}.1`,`lesson.body.${n}.2`):24;
       b.items=b.items.map(v=>typeof v==='string'?{ref:v}:v);
-      b.items.forEach((v,i)=>grow(v,'gap',v.gap??b.gap??24,i<n-1?preferred:24));
+      b.items.forEach((v,i)=>{if(!v.keepGap)grow(v,'gap',v.gap??b.gap??24,i<n-1?preferred:24);});
       if(n<=3)grow(b,'before',b.before??0,12);
     }else if(b.type==='branches'){
       grow(b,'gap',b.gap??32,gap('lesson.branch.1','lesson.branch.2'));grow(b,'before',b.before??0,10);

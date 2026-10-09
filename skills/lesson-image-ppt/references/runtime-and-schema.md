@@ -51,7 +51,7 @@ content 页标题为原稿目标题，topic 可放原稿次级标题或当前小
 
 blocks 支持：
 
-- `paragraphs`：`items:[{ref,emphasis,bold,color,size,bullet,indent,gap}]`。默认字号32、段后15；正文建议32–36。`bullet:true` 表示该原文是上条的从属解释，会缩进并添加圆点。原编号保留。原文小标题用 bold=true。不要让圆点代替原图编号。
+- `paragraphs`：`items:[{ref,emphasis,bold,color,size,bullet,indent,gap}]`。默认字号32、段后24；正文建议32–36。`bullet:true` 表示该原文是上条的从属解释，会缩进并添加圆点。原编号保留。原文小标题必须在 source 中声明 `kind:"heading", level:"point"`（下一级用 `subpoint`），不靠逐页填写 bold=true。渲染器自动沿用模板次级标题样式；正文区标题与页顶 topic 同级同样式，subpoint 比 point 小2px并再缩进一级。标题后12px、其解释缩进24px起；comfortable 保持标题—解释的近距离，只舒展组间距。其他标题层级用 lesson/frame/topic/document 明确声明，不能靠编号正则猜层级。不要让圆点代替原图编号。
 - `branches`：`root:{text:"原文概念"}`、`items:[引用…]`；默认根框宽230、字号30、叶正文32。只给具有明确层级/并列关系的内容用框图。不得用空泛“注意”作为一切内容的万能根节点。默认根框居中，叶左对齐。
 - `table`：`rows:[[引用…],…]`，`widths:[…]`总和1168，默认字号27。第一行视为表头，可跨页重复原表头。渲染器不合并单元格；原稿合并项通过重复其原有标签呈现，不增加不同含义。
 - `arrow`：确有推导关系时放在两个段落块之间，默认在 x=366 显示短实心向下箭头；可设置 x。正文不变。
@@ -62,7 +62,7 @@ blocks 支持：
 
 ## 输出与终检
 
-render.mjs 生成 candidate.pptx、previews/、coverage.json 和 reveal-plan.json；按 [播放节奏](reveals.md) 加入原生出现动画后再终检。覆盖只是已排版证明，不是图片识别正确证明。check_pptx.py 读取实际 PPTX 并检查 body 原文顺序，报告必须保留。
+render.mjs 生成 candidate.pptx、previews/、coverage.json 和 reveal-plan.json；按 [播放节奏](reveals.md) 加入原生出现动画后再终检。覆盖只是已排版证明，不是图片识别正确证明。`check_styles.py source.json styled-deck.json final.pptx --report style-check.json` 读取最终PPTX检查实际分点标题样式和导航红字；render.mjs 自动检查候选，合并、动画等后处理后还要对最终文件重跑。check_pptx.py 读取实际 PPTX 并检查 body 原文顺序，报告必须保留。
 
 文件终检可用 `finalize.mjs`，需要已安装 presentations skill：设置 `PRESENTATIONS_SKILL` 为其目录，`LESSON_PYTHON` 为 Python，`RUNTIME_NODE_MODULES=$LESSON_NODE_MODULES`。参数是4个绝对路径：工作目录、candidate.pptx、交付.pptx、独立receipt.json。交付和receipt禁止覆盖，用新版本名；receipt放在工作目录的records/等私有目录，不能放在交付文件所在目录或其子目录。该检查不证明 WPS 实际字体或显示；WPS 抽查另行记录。
 
